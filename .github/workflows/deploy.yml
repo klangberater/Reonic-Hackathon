@@ -1,0 +1,58 @@
+name: Deploy backend
+
+# Adapted from the theo-copilot deploy on getfletcher.ai: push to main -> SSH ->
+# git reset --hard -> build -> restart the systemd service. One Node service.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'mcp-server/**'
+      - 'data/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: SSH → pull → build → restart on getfletcher.ai
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          if [ -z "$DEPLOY_SSH_KEY" ]; then
+            echo "::error::DEPLOY_SSH_KEY secret is not set"; exit 1
+          fi
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -t ed25519 -T 10 87.106.213.53 > ~/.ssh/known_hosts 2>/dev/null
+          chmod 644 ~/.ssh/known_hosts
+          test -s ~/.ssh/known_hosts || { echo "::error::ssh-keyscan returned no host key"; exit 1; }
+
+      - name: Pull + build + restart on server
+        run: |
+          SSH="ssh -i ~/.ssh/deploy_key -o UserKnownHostsFile=~/.ssh/known_hosts \
+              -o ConnectTimeout=10 github-runner@87.106.213.53"
+          $SSH "set -e
+            cd /opt/reonic/repo
+            git fetch --quiet origin main
+            git reset --hard --quiet origin/main
+            echo '--- HEAD ---'; git log --oneline -1
+            cd backend
+            echo '--- npm ci + build ---'
+            npm ci --no-audit --no-fund 2>&1 | tail -3
+            npm run build 2>&1 | tail -5
+            sudo /bin/systemctl restart reonic-backend.service
+            echo '✓ reonic-backend restarted'
+          "
+
+      - name: Smoke test
+        run: |
+          sleep 3
+          curl -fsS -o /dev/null -w "/api/health: HTTP %{http_code}\n" https://getfletcher.ai/api/health

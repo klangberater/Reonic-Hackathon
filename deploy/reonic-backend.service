@@ -1,0 +1,19 @@
+[Unit]
+# Reonic energy-assistant backend (Node/TS). Modeled on the theo-copilot systemd
+# setup on getfletcher.ai. Place at /etc/systemd/system/reonic-backend.service
+Description=Reonic energy-assistant backend
+After=network.target
+
+[Service]
+Type=simple
+User=github-runner
+WorkingDirectory=/opt/reonic/repo/backend
+# Loads ANTHROPIC_API_KEY, PORT, DEMO_CLOCK, etc. Keep the real file off git.
+EnvironmentFile=/opt/reonic/.env
+ExecStart=/usr/bin/node dist/server.js
+Restart=on-failure
+RestartSec=2
+# Bound to localhost in code (PORT, host 127.0.0.1); the reverse proxy fronts it.
+
+[Install]
+WantedBy=multi-user.target

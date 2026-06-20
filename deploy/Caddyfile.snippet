@@ -1,0 +1,12 @@
+# Caddy route for the Reonic backend. If the server runs Caddy, add this to
+# /etc/caddy/Caddyfile and `sudo systemctl reload caddy`. Caddy auto-manages TLS.
+#
+# Option A — take over the root (old project being replaced):
+getfletcher.ai {
+    reverse_proxy 127.0.0.1:8090
+}
+
+# Option B — dedicated subdomain (Caddy gets a cert automatically if DNS points here):
+# reonic.getfletcher.ai {
+#     reverse_proxy 127.0.0.1:8090
+# }
