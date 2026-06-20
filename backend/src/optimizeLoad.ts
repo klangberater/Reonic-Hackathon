@@ -14,6 +14,7 @@ import { Device } from "./devices";
 
 const DT = 0.25;
 export type Source = "free" | "partial" | "paid";
+export type Objective = "cheapest" | "greenest" | "soonest";
 
 export interface RibbonCell { hour: string; source: Source }
 export interface DaySlot { hour: number; start: string; window: string; source: Source; ownSharePct: number; gridCostEur: number; feasible: boolean }
@@ -38,7 +39,7 @@ export interface OptimizeResult {
 
 function hhmm(iso: string): string { return iso.slice(11, 16); }
 
-export function optimizeLoad(householdId: string, device: Device, nowISO: string, deadlineISO?: string): OptimizeResult {
+export function optimizeLoad(householdId: string, device: Device, nowISO: string, deadlineISO?: string, objective: Objective = "cheapest"): OptimizeResult {
     const recs = recordsArray(householdId);
     const hh = household(householdId);
     const pmax = hh.battery_power_kw || 0;
@@ -75,11 +76,21 @@ export function optimizeLoad(householdId: string, device: Device, nowISO: string
         return { free, battery, grid, cost };
     }
 
-    // search every feasible start; minimise grid cost, tie-break earliest (greenest-soonest)
+    // search every feasible start; selection rule depends on the objective
     let bestS = nowIdx, best = evalWindow(nowIdx);
     for (let s = nowIdx; s + D <= horizonEnd; s++) {
         const r = evalWindow(s);
-        if (r.cost < best.cost - 1e-9) { best = r; bestS = s; }
+        if (objective === "soonest") {
+            // earliest feasible start wins; tie-break by lower cost
+            if (s < bestS || (s === bestS && r.cost < best.cost - 1e-9)) { best = r; bestS = s; }
+        } else if (objective === "greenest") {
+            // maximise own energy (free + battery); tie-break lower cost, then earlier
+            const own = r.free + r.battery, bestOwn = best.free + best.battery;
+            if (own > bestOwn + 1e-9 || (Math.abs(own - bestOwn) < 1e-9 && r.cost < best.cost - 1e-9)) { best = r; bestS = s; }
+        } else {
+            // cheapest: minimise grid cost; tie-break earliest (the loop's natural order keeps the earliest)
+            if (r.cost < best.cost - 1e-9) { best = r; bestS = s; }
+        }
     }
 
     const total = device.energyKwh;
