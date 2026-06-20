@@ -31,13 +31,25 @@ function hourOf(iso: string): number { return parseInt(iso.slice(11, 13), 10); }
 function round(v: number, dp: number): number { const f = 10 ** dp; return Math.round(v * f) / f; }
 
 /**
- * Cost + grid kWh if this device ran starting at nowISO — the "do it now" baseline we measure
- * savings against. Intentionally evaluates the device in isolation (ignores other committed
- * loads): it answers "what would this one task cost if I just ran it right now".
+ * The "naive" baseline we measure savings against: running the task last-minute so it just
+ * finishes by its deadline (the car charging overnight to be ready by 7am, the dishwasher run
+ * in the evening). The smart plan pulls the load onto solar instead, and the difference is the
+ * saving. Evaluates the device in isolation (ignores other committed loads). Falls back to the
+ * deadline-less case by starting at `nowIdx`.
  */
-function baselineAt(householdId: string, device: Device, nowISO: string): { cost: number; gridKwh: number } {
+function baselineStartIdx(householdId: string, device: Device, nowIdx: number, deadlineISO?: string): number {
     const recs = recordsArray(householdId);
-    const s = indexOf(householdId, nowISO);
+    if (!deadlineISO) return nowIdx;
+    const dIdx = indexOf(householdId, deadlineISO);
+    if (dIdx < 0) return nowIdx;
+    // start so the run finishes at the deadline; never before now, never past the series
+    const last = recs.length - device.durationSlots;
+    return Math.max(nowIdx, Math.min(dIdx - device.durationSlots, last));
+}
+
+function baselineAt(householdId: string, device: Device, startIdx: number): { cost: number; gridKwh: number } {
+    const recs = recordsArray(householdId);
+    const s = Math.max(0, startIdx);
     let grid = 0, cost = 0;
     let pool = recs[s].battery_soc_kwh;
     const pmax = household(householdId).battery_power_kw || 0;
@@ -55,6 +67,7 @@ function baselineAt(householdId: string, device: Device, nowISO: string): { cost
 export function planDay(householdId: string, nowISO: string, mode: Objective, inputs: PlanTaskInput[]): PlanResult {
     // replace prior commitments for exactly the devices being (re)planned
     for (const t of inputs) ledgerRemove(householdId, t.device);
+    const nowIdx = indexOf(householdId, nowISO);
 
     // pinned tasks first (so the rest route around them), then by deadline ascending
     const ordered = [...inputs].sort((a, b) => {
@@ -86,7 +99,7 @@ export function planDay(householdId: string, nowISO: string, mode: Objective, in
         totalOwn += own; totalKwh += device.energyKwh;
         planGridKwh += placed.breakdownKwh.grid; planCost += placed.gridCostEur;
 
-        const base = baselineAt(householdId, device, nowISO);
+        const base = baselineAt(householdId, device, baselineStartIdx(householdId, device, nowIdx, input.deadline));
         baseGridKwh += base.gridKwh; baseCost += base.cost;
 
         tasks.push({

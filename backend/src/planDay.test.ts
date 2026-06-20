@@ -27,6 +27,16 @@ test("plans all tasks, returns 18-hour curve and non-negative savings", () => {
   }
 });
 
+test("savings are real: charging the car by 7am beats the overnight last-minute baseline", () => {
+  fresh();
+  const out = planDay(HH, NOW, "cheapest", [
+    { device: "ev", deadline: "2026-06-21T07:00:00", target: 80 },
+  ]);
+  // baseline = charge overnight to finish at 7am (grid); plan pulls it onto midday solar
+  assert.ok(out.savedEur > 0, `expected positive savings, got €${out.savedEur}`);
+  assert.ok(out.savedCo2Kg > 0, `expected positive CO2 saving, got ${out.savedCo2Kg}kg`);
+});
+
 test("tasks route around each other (no identical EV+dishwasher claim by accident)", () => {
   fresh();
   const out = planDay(HH, NOW, "cheapest", [
