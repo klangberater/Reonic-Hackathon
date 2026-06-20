@@ -4,6 +4,7 @@ struct HomeView: View {
     @StateObject private var vm = HomeViewModel()
     @State private var selectedDevice: Device?
     @State private var showFlow = false
+    @State private var showChat = false
 
     var body: some View {
         ScrollView {
@@ -33,6 +34,7 @@ struct HomeView: View {
                 .presentationDetents([.large])
         }
         .sheet(isPresented: $showFlow) { if let s = vm.state { FlowDetailView(state: s) } }
+        .sheet(isPresented: $showChat) { ChatView(clock: vm.clock) }
     }
 
     private var header: some View {
@@ -111,17 +113,19 @@ struct HomeView: View {
     }
 
     private var askBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "sparkles").foregroundStyle(Theme.green)
-            Text("Ask anything…").foregroundStyle(Theme.subtle)
-            Spacer()
-            Image(systemName: "mic.fill").foregroundStyle(Theme.subtle)
-        }
-        .font(.callout)
-        .padding(.horizontal, 16).padding(.vertical, 12)
-        .background(.regularMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(Theme.subtle.opacity(0.25)))
-        .padding(.horizontal, 20).padding(.bottom, 6)
+        Button { showChat = true } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "sparkles").foregroundStyle(Theme.green)
+                Text("Ask anything…").foregroundStyle(Theme.subtle)
+                Spacer()
+                Image(systemName: "mic.fill").foregroundStyle(Theme.subtle)
+            }
+            .font(.callout)
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .background(.regularMaterial, in: Capsule())
+            .overlay(Capsule().strokeBorder(Theme.subtle.opacity(0.25)))
+            .padding(.horizontal, 20).padding(.bottom, 6)
+        }.buttonStyle(.plain)
     }
 
     private func errorCard(_ err: String) -> some View {

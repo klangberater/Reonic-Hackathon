@@ -34,6 +34,27 @@ struct APIClient: Sendable {
     }
     private struct ResetResp: Decodable { let ok: Bool }
 
+    func chat(message: String, history: [ChatMessage], household: String = Config.defaultHousehold, clock: DemoClock) async throws -> ChatResponse {
+        let body: [String: Any] = [
+            "household": household, "clock": clock.rawValue, "message": message,
+            "history": history.map { ["role": $0.role, "content": $0.content] },
+        ]
+        return try await postJSON("/chat", body: body)
+    }
+
+    private func postJSON<T: Decodable>(_ path: String, body: [String: Any]) async throws -> T {
+        guard let url = URL(string: baseURL + path) else { throw APIError(message: "bad URL") }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if !Config.chatToken.isEmpty { req.setValue(Config.chatToken, forHTTPHeaderField: "x-lumen-token") }
+        req.httpBody = try JSONSerialization.data(withJSONObject: body)
+        req.timeoutInterval = 40
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        try check(resp)
+        return try decoder().decode(T.self, from: data)
+    }
+
     // MARK: plumbing
     private func get<T: Decodable>(_ path: String, household: String, clock: DemoClock, extra: [URLQueryItem] = []) async throws -> T {
         guard var c = URLComponents(string: baseURL + path) else { throw APIError(message: "bad URL") }

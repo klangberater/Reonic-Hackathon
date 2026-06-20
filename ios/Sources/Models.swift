@@ -94,6 +94,17 @@ enum DemoClock: String, CaseIterable, Identifiable, Sendable {
     var label: String { self == .summer ? "Summer · now" : "Winter" }
 }
 
+// MARK: - /chat
+struct ChatMessage: Identifiable, Sendable {
+    let id = UUID()
+    let role: String      // user | assistant
+    var content: String
+}
+struct ChatResponse: Decodable, Sendable {
+    let reply: String
+    let toolsUsed: [String]
+}
+
 /// free | partial | paid → semantic source used across tiles, ribbon, sheet.
 enum Source: String {
     case free, partial, paid

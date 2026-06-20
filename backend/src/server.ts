@@ -3,15 +3,14 @@
  * Endpoints map 1:1 to homescreen-and-backend.md §5. Numbers come from tools; words come later.
  */
 import express from "express";
-import {
-    households, household, contract, tariff, billsFor, insightsFor,
-    recordAt, recordsArray, indexOf,
-} from "./data";
+import { households, household, contract, tariff, recordsArray, indexOf } from "./data";
 import { resolveNow } from "./clock";
 import { devicesFor, deviceById } from "./devices";
 import { optimizeLoad } from "./optimizeLoad";
 import { moneyForecast } from "./money";
 import { commitmentsFor, addCommitment, clearCommitments } from "./ledger";
+import { snapshotFor, insightsFor } from "./views";
+import { runChat } from "./openaiChat";
 
 const PORT = parseInt(process.env.PORT || "8090", 10);
 const HOST = "127.0.0.1";
@@ -23,25 +22,10 @@ const clk = (req: express.Request) => (req.query.clock as string) || (req.body?.
 
 app.get("/health", (_req, res) => res.json({ status: "ok", households: households().length }));
 
-// GET now / state — the glance snapshot (tool get_current_state)
-function snapshot(id: string, at: string) {
-    const r = recordAt(id, at);
-    if (!r) return null;
-    const batteryState = r.battery_charge_kw > 0.05 ? "charging" : r.battery_discharge_kw > 0.05 ? "discharging" : "idle";
-    const gridDir = r.grid_export_kw > 0.05 ? "exporting" : r.grid_import_kw > 0.05 ? "importing" : "balanced";
-    const status = r.grid_export_kw > 0.05 ? "exporting_surplus" : r.grid_import_kw > 0.05 ? "drawing_grid" : "self_powered";
-    return {
-        household_id: id, household_name: household(id).name, at,
-        outdoor_temp_c: r.outdoor_temp_c, solar_kw: r.pv_production_kw, consumption_kw: r.total_consumption_kw,
-        breakdown_kw: { house: r.house_load_kw, heatpump: r.heatpump_kw, ev: r.ev_charging_kw },
-        battery: { soc_pct: r.battery_soc_pct, flow_kw: round(r.battery_charge_kw - r.battery_discharge_kw, 3), state: batteryState },
-        grid: { flow_kw: round(r.grid_export_kw - r.grid_import_kw, 3), direction: gridDir },
-        price_eur_per_kwh: r.price_eur_per_kwh, net_kw: round(r.pv_production_kw - r.total_consumption_kw, 3), status,
-    };
-}
+// GET now / state — the glance snapshot
 function nowHandler(req: express.Request, res: express.Response) {
-    const s = snapshot(hid(req), resolveNow(clk(req), req.query.at as string));
-    return s ? res.json(s) : res.status(404).json({ error: "no record at that time" });
+    const s = snapshotFor(hid(req), resolveNow(clk(req), req.query.at as string)) as any;
+    return s.error ? res.status(404).json(s) : res.json(s);
 }
 app.get("/now", nowHandler);
 app.get("/state", nowHandler);
@@ -108,11 +92,21 @@ app.post("/reset", (req, res) => { clearCommitments(hid(req)); res.json({ ok: tr
 
 // GET insights — date-aware; drives the health indicator + proactive cards
 app.get("/insights", (req, res) => {
-    const id = hid(req);
-    const nowDate = resolveNow(clk(req), req.query.at as string).slice(0, 10);
-    const events = insightsFor(id).map((e) => ({ ...e, active: isActive(e.period, nowDate) }));
-    const health = events.some((e) => e.active && e.type === "anomaly" && e.severity === "high") ? "alert" : "ok";
-    res.json({ health, events });
+    res.json(insightsFor(hid(req), resolveNow(clk(req), req.query.at as string)));
+});
+
+// POST chat — grounded assistant (OpenAI function-calling over the planner tools)
+app.post("/chat", async (req, res) => {
+    const token = process.env.CHAT_TOKEN;
+    if (token && req.get("x-lumen-token") !== token) return res.status(401).json({ error: "unauthorized" });
+    const message = String(req.body?.message || "").slice(0, 1000);
+    if (!message) return res.status(400).json({ error: "message required" });
+    try {
+        const out = await runChat(hid(req), clk(req), message, Array.isArray(req.body?.history) ? req.body.history : []);
+        res.json(out);
+    } catch (e: any) {
+        res.status(e.code === 503 ? 503 : 500).json({ error: String(e.message || e) });
+    }
 });
 
 app.listen(PORT, HOST, () => console.log(`reonic-backend on http://${HOST}:${PORT}`));
@@ -122,15 +116,5 @@ function windowOf(id: string, startISO: string, durationSlots: number): string {
     const recs = recordsArray(id); const s = indexOf(id, startISO);
     const e = recs[Math.min(recs.length - 1, s + durationSlots)].timestamp;
     return `${startISO.slice(11, 16)}–${e.slice(11, 16)}`;
-}
-function isActive(period: string, nowDate: string): boolean {
-    if (period === "recurring") return true;
-    const range = period.match(/^(\d{4}-\d{2}-\d{2})\.\.(\d{4}-\d{2}-\d{2})$/);
-    if (range) {
-        const end = new Date(range[2]); end.setDate(end.getDate() + 7); // stays relevant a week after
-        return nowDate >= range[1] && nowDate <= end.toISOString().slice(0, 10);
-    }
-    if (/^\d{4}-\d{2}$/.test(period)) return period <= nowDate.slice(0, 7); // retrospective monthly insight
-    return false;
 }
 function round(v: number, dp: number): number { const f = 10 ** dp; return Math.round(v * f) / f; }
