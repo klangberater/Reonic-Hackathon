@@ -29,20 +29,20 @@ import SwiftUI
         else { selected[device.id] = TaskInput(deadline: defaultDeadline(for: device), target: 80) }
     }
 
-    func makePlan() async { await runPlan(reset: true) }
-    func replan() async { nudged.removeAll(); await runPlan(reset: true) }
-    func setMode(_ m: PlanMode) { mode = m; Task { await runPlan(reset: false) } }
+    func makePlan() async { await runPlan() }
+    func replan() async { nudged.removeAll(); await runPlan() }
+    func setMode(_ m: PlanMode) { mode = m; Task { await runPlan() } }
 
     /// Nudge a task ±1h, pin it, and re-plan the rest around it.
     func nudge(device: String, deltaHours: Int) {
         guard let t = plan?.tasks.first(where: { $0.device == device }) else { return }
         let base = nudged[device].flatMap(hour(fromISO:)) ?? t.startHour
-        let h = min(23, max(0, base + deltaHours))
+        let h = min(23, max(6, base + deltaHours))   // keep within the 06–23 timeline axis
         nudged[device] = isoAtHour(h)
-        Task { await runPlan(reset: false) }
+        Task { await runPlan() }
     }
 
-    private func runPlan(reset: Bool) async {
+    private func runPlan() async {
         isLoading = true; errorText = nil
         defer { isLoading = false }
         let inputs: [PlanTaskInput] = selected.map { (id, input) in

@@ -53,7 +53,7 @@ struct PlanDayView: View {
                 Spacer()
                 DatePicker("", selection: Binding(
                     get: { vm.selected[d.id]?.deadline ?? Date() },
-                    set: { if vm.selected[d.id] != nil { vm.selected[d.id]!.deadline = $0 } }
+                    set: { vm.selected[d.id]?.deadline = $0 }
                 ), displayedComponents: .hourAndMinute)
                 .labelsHidden()
             }
@@ -62,7 +62,7 @@ struct PlanDayView: View {
                     Text("Charge to \(input.target)%").font(.caption).foregroundStyle(Theme.subtle)
                     Slider(value: Binding(
                         get: { Double(vm.selected[d.id]?.target ?? 80) },
-                        set: { if vm.selected[d.id] != nil { vm.selected[d.id]!.target = Int($0) } }
+                        set: { vm.selected[d.id]?.target = Int($0) }
                     ), in: 50...100, step: 5)
                     .tint(Theme.green)
                 }
