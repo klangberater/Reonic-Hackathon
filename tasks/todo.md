@@ -49,7 +49,7 @@ decision (midday-cheap dynamic prices), nudge (winter anomaly + bill forecast).
 - [x] Deployed to server: `/opt/reonic/repo`, `reonic-backend.service` on 127.0.0.1:8090
 - [x] nginx `/api/` repointed 8002→8090 (+ auth_basic off), backed up; `/ws` & whatsapp left on theo
 - [x] **Verified public HTTPS end-to-end:** `https://getfletcher.ai/api/health` 200, `/api/state` serves live data
-- [ ] Add `DEPLOY_SSH_KEY` secret to this repo (user) → enables push-to-main auto-deploy
+- [x] Add `DEPLOY_SSH_KEY` secret → dedicated deploy key authorized for github-runner; push-to-main auto-deploy verified green
 - [ ] Add a token guard on `/chat` before exposing (it will call Claude = costs money; `/api/` is public)
 - [ ] Retire theo services once ours is fully confirmed (keep as fallback for now)
 
