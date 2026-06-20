@@ -64,12 +64,12 @@ decision (midday-cheap dynamic prices), nudge (winter anomaly + bill forecast).
 ## Building the planner (homescreen-and-backend.md spec)
 Order: backend differentiator first → iOS home/device-sheet UI → /chat → TestFlight.
 
-### Backend (this phase)
-- [ ] Extend data layer: prices/contracts/bills/insights + ordered records + now-index
-- [ ] Device library (dishwasher, washing machine, EV) + in-memory commitments ledger
-- [ ] `optimizeLoad.ts` engine: greenest window, source (free/partial/paid), own-share %, grid cost, ribbon, rationale; sequential route-around via the ledger
-- [ ] Endpoints: GET /now(+/state), /household, /money, /devices, /optimize_load, /insights; POST /commit_load, GET /commitments, POST /reset
-- [ ] Test with real data (summer + winter); verify route-around; commit (auto-deploys)
+### Backend (DONE, deployed)
+- [x] Extend data layer: prices/contracts/bills/insights + ordered records + now-index
+- [x] Device library (dishwasher, washing machine, EV) + in-memory commitments ledger
+- [x] `optimizeLoad.ts` engine: greenest window, source (free/partial/paid), own-share %, grid cost, ribbon, rationale; sequential route-around via the ledger
+- [x] Endpoints: GET /now(+/state), /household, /money, /devices, /optimize_load, /insights; POST /commit_load, GET /commitments, POST /reset
+- [x] Verified on real data (summer free / winter route-around / winter health alert); live over HTTPS
 
 ### iOS (next phase)
 - [ ] Rebuild home screen (verdict, money, device tiles, ask bar) + device sheet (best time, source ribbon, confirm)
