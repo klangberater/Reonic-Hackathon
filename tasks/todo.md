@@ -78,7 +78,9 @@ Order: backend differentiator first → iOS home/device-sheet UI → /chat → T
 - [ ] Ask bar is currently a visual placeholder (wires to /chat later)
 
 ### Later
-- [ ] POST /chat: Claude grounded on calls 1–6 as tools (MCP) + token guard  ← the headline feature
+- [x] POST /chat: **OpenAI** function-calling over the planner tools (event is OpenAI-sponsored).
+  Live + grounded: dishwasher-now, earn-€15, winter why-high-bill. iOS ask bar → chat sheet.
+  NOTE: chat UI was added AFTER the first TestFlight archive → re-archive to get chat on the phone.
 - [ ] Summer insight set + date-aware insights
 - [x] TestFlight: Team ID wired, icon added, ITSAppUsesNonExemptEncryption=NO; build live on the phone
   - ASC listing name "Lumen Energy" (on-device name stays "Lumen"); re-archive+upload for new builds
