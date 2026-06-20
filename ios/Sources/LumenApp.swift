@@ -2,11 +2,11 @@ import SwiftUI
 
 @main
 struct LumenApp: App {
-    @AppStorage("appearance") private var appearance = "dark"   // dark energy look by default
+    @AppStorage("appearance") private var appearance = "dark"
 
     var body: some Scene {
         WindowGroup {
-            HomeView()
+            RootPager()
                 .preferredColorScheme(appearance == "light" ? .light : .dark)
         }
     }

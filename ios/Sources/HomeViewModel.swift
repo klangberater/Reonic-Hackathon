@@ -3,7 +3,11 @@ import SwiftUI
 
 @MainActor
 final class HomeViewModel: ObservableObject {
-    @Published var clock: DemoClock = .summer
+    let clockStore: ClockStore
+    var clock: DemoClock { clockStore.clock }
+
+    init(clockStore: ClockStore) { self.clockStore = clockStore }
+
     @Published var state: EnergyState?
     @Published var money: Money?
     @Published var devices: [Device] = []
@@ -32,9 +36,8 @@ final class HomeViewModel: ObservableObject {
     }
 
     func setClock(_ c: DemoClock) {
-        guard c != clock else { return }
-        clock = c
-        Task { try? await api.reset(); await loadAll() }  // fresh ledger per clock for clean demos
+        clockStore.setClock(c)
+        Task { await loadAll() }
     }
 
     var activeAnomaly: InsightEvent? {

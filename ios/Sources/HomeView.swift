@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct HomeView: View {
-    @StateObject private var vm = HomeViewModel()
+    @StateObject private var vm: HomeViewModel
+    init(clock: ClockStore) { _vm = StateObject(wrappedValue: HomeViewModel(clockStore: clock)) }
     @State private var selectedDevice: Device?
     @State private var showFlow = false
     @State private var showChat = false
@@ -27,6 +28,7 @@ struct HomeView: View {
         .warmScreen()
         .safeAreaInset(edge: .bottom) { askBar }
         .task { if vm.state == nil { await vm.loadAll() } }
+        .onAppear { Task { await vm.reloadDevices() } }
         .sheet(item: $selectedDevice) { d in
             DeviceSheetView(device: d, clock: vm.clock) { await vm.reloadDevices() }
                 .presentationDetents([.large])
@@ -44,6 +46,7 @@ struct HomeView: View {
             }
             Spacer()
             HStack(spacing: 12) {
+                PagerDots(current: 0)
                 Button { appearance = (appearance == "dark" ? "light" : "dark") } label: {
                     Image(systemName: "circle.lefthalf.filled").font(.title3).foregroundStyle(Theme.subtle)
                 }
