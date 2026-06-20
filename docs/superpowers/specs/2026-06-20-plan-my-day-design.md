@@ -127,8 +127,12 @@ Algorithm (`planDay.ts`):
    (one sample per hour, on the hour).
 5. **Aggregate metrics:**
    - `solarSharePct` = Σ own kWh ÷ Σ total kWh across tasks (own = free + battery).
-   - Baseline = each task run immediately at `now` (one `evalWindow` at `nowIdx`, ignoring
-     other tasks). `savedEur` = Σ baseline cost − Σ plan cost (floored at 0).
+   - Baseline = each task run **last-minute, finishing exactly at its deadline** (car
+     charging overnight to be ready by 7am, appliance in the evening), evaluated in
+     isolation. The smart plan pulls the load onto solar instead, and the gap is the saving.
+     This keeps the headline €/CO₂ honest *and* non-zero even at the solar-noon demo anchor,
+     where a "run it right now" baseline would already be optimal. `savedEur` = Σ baseline
+     cost − Σ plan cost (floored at 0).
    - `savedCo2Kg` = (Σ baseline grid kWh − Σ plan grid kWh) × 0.40 (German grid factor,
      named constant `CO2_KG_PER_KWH`).
 
