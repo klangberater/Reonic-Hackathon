@@ -1,71 +1,132 @@
 /**
- * Thin data-access layer over the coherent demo dataset in ../../data.
- * Loads + indexes lazily and caches in memory (the timeseries files are ~19 MB each).
+ * Data-access layer over the coherent demo dataset in ../../data.
+ * Loads + indexes lazily and caches (timeseries files are ~19 MB each).
  */
 import fs from "fs";
 import path from "path";
 
-// backend/dist/data.js -> ../../data = <repo>/data
 const DATA_DIR = path.resolve(__dirname, "..", "..", "data");
 
 export interface TimeseriesRecord {
-  timestamp: string;
-  outdoor_temp_c: number;
-  pv_production_kw: number;
-  house_load_kw: number;
-  heatpump_kw: number;
-  ev_charging_kw: number;
-  total_consumption_kw: number;
-  battery_charge_kw: number;
-  battery_discharge_kw: number;
-  battery_soc_kwh: number;
-  battery_soc_pct: number;
-  grid_import_kw: number;
-  grid_export_kw: number;
-  price_eur_per_kwh: number;
+    timestamp: string;
+    outdoor_temp_c: number;
+    pv_production_kw: number;
+    house_load_kw: number;
+    heatpump_kw: number;
+    ev_charging_kw: number;
+    total_consumption_kw: number;
+    battery_charge_kw: number;
+    battery_discharge_kw: number;
+    battery_soc_kwh: number;
+    battery_soc_pct: number;
+    grid_import_kw: number;
+    grid_export_kw: number;
+    price_eur_per_kwh: number;
 }
 
 export interface Household {
-  household_id: string;
-  name: string;
-  city: string;
-  residents: number;
-  pv_kwp: number;
-  battery_kwh: number;
-  heat_pump: boolean;
-  ev_charger: boolean;
-  tariff_id: string;
-  timeseries_file: string;
+    household_id: string;
+    name: string;
+    city: string;
+    residents: number;
+    pv_kwp: number;
+    battery_kwh: number;
+    battery_power_kw: number;
+    heat_pump: boolean;
+    ev_charger: boolean;
+    tariff_id: string;
+    timeseries_file: string;
+}
+
+export interface Contract {
+    household_id: string;
+    tariff_id: string;
+    tariff_name: string;
+    contract_start: string;
+    contract_end: string;
+    minimum_term_months: number;
+    notice_period_weeks: number;
+    base_fee_eur_per_month: number;
+    feed_in_eur_per_kwh: number;
+    energy_pricing: { model: string; spot_adder_eur_per_kwh?: number; energy_rate_eur_per_kwh?: number };
+    assets: { pv_kwp: number; battery_kwh: number; heat_pump: boolean; heat_pump_kw: number; ev_charger: boolean; ev_battery_kwh: number };
+    contract_terms_text: string;
+}
+
+export interface MonthlyBill {
+    household_id: string; month: string;
+    consumption_kwh: number; pv_production_kwh: number;
+    grid_import_kwh: number; grid_export_kwh: number;
+    energy_cost_eur: number; base_fee_eur: number; feed_in_credit_eur: number;
+    total_bill_eur: number; self_sufficiency_pct: number;
+}
+
+export interface InsightEvent {
+    household_id: string; type: string; severity: string;
+    period: string; title: string; detail: string; suggested_action: string;
 }
 
 function readJson<T>(file: string): T {
-  return JSON.parse(fs.readFileSync(path.join(DATA_DIR, file), "utf8")) as T;
+    return JSON.parse(fs.readFileSync(path.join(DATA_DIR, file), "utf8")) as T;
 }
 
 let _households: Household[] | null = null;
 export function households(): Household[] {
-  if (!_households) _households = readJson<Household[]>("households.json");
-  return _households;
+    if (!_households) _households = readJson<Household[]>("households.json");
+    return _households;
 }
-
 export function household(id: string): Household {
-  const hh = households().find((h) => h.household_id === id);
-  if (!hh) throw new Error(`unknown household: ${id}`);
-  return hh;
+    const hh = households().find((h) => h.household_id === id);
+    if (!hh) throw new Error(`unknown household: ${id}`);
+    return hh;
 }
 
-const _seriesCache = new Map<string, Map<string, TimeseriesRecord>>();
-
-/** Records for a household, indexed by ISO timestamp. Cached after first load. */
-export function seriesByTimestamp(id: string): Map<string, TimeseriesRecord> {
-  let idx = _seriesCache.get(id);
-  if (!idx) {
-    const file = household(id).timeseries_file;
-    const raw = readJson<{ records: TimeseriesRecord[] }>(file);
-    idx = new Map(raw.records.map((r) => [r.timestamp, r]));
-    _seriesCache.set(id, idx);
-  }
-  return idx;
+let _contracts: Contract[] | null = null;
+export function contract(id: string): Contract {
+    if (!_contracts) _contracts = readJson<Contract[]>("contracts.json");
+    const c = _contracts.find((x) => x.household_id === id);
+    if (!c) throw new Error(`no contract: ${id}`);
+    return c;
 }
 
-export const DATA_DIR_PATH = DATA_DIR;
+let _tariffs: any[] | null = null;
+export function tariff(id: string): any {
+    if (!_tariffs) _tariffs = readJson<any[]>("tariffs.json");
+    const t = _tariffs.find((x) => x.tariff_id === id);
+    if (!t) throw new Error(`no tariff: ${id}`);
+    return t;
+}
+
+let _bills: MonthlyBill[] | null = null;
+export function billsFor(id: string): MonthlyBill[] {
+    if (!_bills) _bills = readJson<MonthlyBill[]>("monthly_bills.json");
+    return _bills.filter((b) => b.household_id === id);
+}
+
+let _insights: InsightEvent[] | null = null;
+export function insightsFor(id: string): InsightEvent[] {
+    if (!_insights) _insights = readJson<InsightEvent[]>("insight_events.json");
+    return _insights.filter((e) => e.household_id === id);
+}
+
+interface Series { records: TimeseriesRecord[]; index: Map<string, number> }
+const _seriesCache = new Map<string, Series>();
+function series(id: string): Series {
+    let s = _seriesCache.get(id);
+    if (!s) {
+        const raw = readJson<{ records: TimeseriesRecord[] }>(household(id).timeseries_file);
+        const index = new Map(raw.records.map((r, i) => [r.timestamp, i]));
+        s = { records: raw.records, index };
+        _seriesCache.set(id, s);
+    }
+    return s;
+}
+export function recordsArray(id: string): TimeseriesRecord[] { return series(id).records; }
+export function indexOf(id: string, iso: string): number {
+    const i = series(id).index.get(iso);
+    return i === undefined ? -1 : i;
+}
+export function recordAt(id: string, iso: string): TimeseriesRecord | undefined {
+    const i = indexOf(id, iso);
+    return i < 0 ? undefined : series(id).records[i];
+}

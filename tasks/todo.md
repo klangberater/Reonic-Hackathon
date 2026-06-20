@@ -61,6 +61,21 @@ decision (midday-cheap dynamic prices), nudge (winter anomaly + bill forecast).
 - [ ] Chat tab against `/chat` (streamed grounded answers) — after that endpoint lands
 - [ ] Verdict line currently templated client-side → swap to LLM-generated when /chat exists
 
-## Next: MCP server + tool-loop
-- [ ] MCP server (7 tools) over data/; backend Claude tool-loop; `/chat` (SSE) + token guard
-- [ ] Add summer insight set to the transform; make get_insights date-aware
+## Building the planner (homescreen-and-backend.md spec)
+Order: backend differentiator first → iOS home/device-sheet UI → /chat → TestFlight.
+
+### Backend (this phase)
+- [ ] Extend data layer: prices/contracts/bills/insights + ordered records + now-index
+- [ ] Device library (dishwasher, washing machine, EV) + in-memory commitments ledger
+- [ ] `optimizeLoad.ts` engine: greenest window, source (free/partial/paid), own-share %, grid cost, ribbon, rationale; sequential route-around via the ledger
+- [ ] Endpoints: GET /now(+/state), /household, /money, /devices, /optimize_load, /insights; POST /commit_load, GET /commitments, POST /reset
+- [ ] Test with real data (summer + winter); verify route-around; commit (auto-deploys)
+
+### iOS (next phase)
+- [ ] Rebuild home screen (verdict, money, device tiles, ask bar) + device sheet (best time, source ribbon, confirm)
+- [ ] Wire to the new endpoints; health loud-state; tile lifecycle
+
+### Later
+- [ ] POST /chat: Claude grounded on calls 1–6 as tools (MCP) + token guard
+- [ ] Summer insight set + date-aware insights
+- [ ] TestFlight: Team ID + bundle id registration + first archive/upload
