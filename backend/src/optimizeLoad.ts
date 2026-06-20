@@ -16,11 +16,14 @@ const DT = 0.25;
 export type Source = "free" | "partial" | "paid";
 
 export interface RibbonCell { hour: string; source: Source }
+export interface DaySlot { hour: number; start: string; window: string; source: Source; ownSharePct: number; gridCostEur: number; feasible: boolean }
 export interface OptimizeResult {
     device: string;
     deviceName: string;
     controllable: boolean;
     loadKwh: number;
+    durationSlots: number;
+    durationHours: number;
     start: string;
     end: string;
     window: string;            // "13:00–15:00"
@@ -29,6 +32,7 @@ export interface OptimizeResult {
     gridCostEur: number;
     breakdownKwh: { free: number; battery: number; grid: number };
     ribbon: RibbonCell[];
+    slots: DaySlot[];          // per-start-hour evaluation across the day (for the interactive picker)
     rationale: string;
 }
 
@@ -86,11 +90,28 @@ export function optimizeLoad(householdId: string, device: Device, nowISO: string
     const endISO = recs[Math.min(recs.length - 1, bestS + D)].timestamp;
     const window = `${hhmm(startISO)}–${hhmm(endISO)}`;
 
+    // per-start-hour evaluation across the whole now-day (for the interactive picker)
+    const date = recs[nowIdx].timestamp.slice(0, 10);
+    const slots: DaySlot[] = [];
+    for (let h = 0; h < 24; h++) {
+        const iso = `${date}T${String(h).padStart(2, "0")}:00:00`;
+        const s = indexOf(householdId, iso);
+        const feasible = s >= 0 && s + D <= recs.length;
+        if (!feasible) { slots.push({ hour: h, start: iso, window: "", source: "paid", ownSharePct: 0, gridCostEur: 0, feasible: false }); continue; }
+        const r = evalWindow(s);
+        const o = r.free + r.battery;
+        const src: Source = r.grid < 0.02 * total ? "free" : o > 0.02 * total ? "partial" : "paid";
+        const endH = recs[Math.min(recs.length - 1, s + D)].timestamp;
+        slots.push({ hour: h, start: iso, window: `${hhmm(iso)}–${hhmm(endH)}`, source: src, ownSharePct: Math.round((o / total) * 100), gridCostEur: round(r.cost, 2), feasible: true });
+    }
+
     return {
         device: device.id,
         deviceName: device.name,
         controllable: device.controllable,
         loadKwh: round(total, 2),
+        durationSlots: D,
+        durationHours: round(D * DT, 2),
         start: startISO,
         end: endISO,
         window,
@@ -99,6 +120,7 @@ export function optimizeLoad(householdId: string, device: Device, nowISO: string
         gridCostEur: round(best.cost, 2),
         breakdownKwh: { free: round(best.free, 2), battery: round(best.battery, 2), grid: round(best.grid, 2) },
         ribbon: dayRibbon(recs, nowIdx, freeSolarPower, device.powerKw),
+        slots,
         rationale: rationale(source, device, window, ownSharePct, round(best.cost, 2)),
     };
 }
