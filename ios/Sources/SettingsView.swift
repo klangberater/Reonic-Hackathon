@@ -21,7 +21,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Demo clock")
                 } footer: {
-                    Text("Switches the home's “now”. Winter surfaces the heat-pump anomaly; summer is the sunny demo day.")
+                    Text("Switches the home's “now”. Live tracks the real clock; Sunny demo pins a bright midday so plans land on solar; Winter surfaces the heat-pump anomaly.")
                 }
 
                 Section("Appearance") {

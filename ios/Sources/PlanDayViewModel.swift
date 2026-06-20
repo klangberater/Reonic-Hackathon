@@ -170,6 +170,7 @@ import SwiftUI
     /// exists in the dataset, matching the backend); winter stays fixed for the anomaly demo.
     private func nowDate() -> Date {
         if clock == .winter { return Self.formatter.date(from: "2026-01-15T08:00:00") ?? Date() }
+        if clock == .summerday { return Self.formatter.date(from: "2026-06-20T11:00:00") ?? Date() }
         let cal = berlinCal
         var c = cal.dateComponents([.year, .month, .day, .hour, .minute], from: Date())
         c.year = 2026
@@ -190,14 +191,13 @@ import SwiftUI
     /// on the real clock (pick 11am at 18:27 → tomorrow 11am). The planner reasons from the demo
     /// "now", so the result is always strictly after it.
     func normalizedDeadline(_ chosen: Date) -> Date {
+        // Anchor everything to the virtual "now" (`vnow`), not the real wall clock, so the
+        // pinned demo clocks (Sunny / Winter) roll deadlines coherently rather than against
+        // whatever time it happens to be on stage.
         let cal = berlinCal
         let vnow = nowDate()
         let hm = cal.dateComponents([.hour, .minute], from: chosen)
         var deadline = cal.date(bySettingHour: hm.hour ?? 20, minute: hm.minute ?? 0, second: 0, of: vnow) ?? vnow
-        let nowHM = cal.dateComponents([.hour, .minute], from: Date())
-        let chosenMin = (hm.hour ?? 0) * 60 + (hm.minute ?? 0)
-        let realMin = (nowHM.hour ?? 0) * 60 + (nowHM.minute ?? 0)
-        if chosenMin <= realMin { deadline = cal.date(byAdding: .day, value: 1, to: deadline) ?? deadline }
         while deadline <= vnow { deadline = cal.date(byAdding: .day, value: 1, to: deadline) ?? deadline }
         return deadline
     }
