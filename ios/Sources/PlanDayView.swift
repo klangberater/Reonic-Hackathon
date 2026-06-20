@@ -110,7 +110,7 @@ struct PlanDayView: View {
                 Text(d.displayName).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.ink)
                 Spacer()
                 if let input = vm.selected[d.id] {
-                    Text(vm.dayHint(for: input.deadline)).font(.caption).foregroundStyle(Theme.subtle)
+                    Text("ready by \(vm.dayHint(for: input.deadline))").font(.caption).foregroundStyle(Theme.subtle)
                 }
                 DatePicker("", selection: Binding(
                     get: { vm.selected[d.id]?.deadline ?? Date() },
