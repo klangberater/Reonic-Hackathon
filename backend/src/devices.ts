@@ -1,4 +1,4 @@
-import { contract } from "./data";
+import { contract, household } from "./data";
 
 export interface Device {
     id: string;
@@ -18,6 +18,11 @@ export function devicesFor(householdId: string): Device[] {
         appliance("dishwasher", "Dishwasher", "bowl", 1.2, 8),       // 2.0h
         appliance("washing_machine", "Washing machine", "wash", 0.9, 6), // 1.5h
     ];
+    list.push(appliance("dryer", "Dryer", "dryer", 2.5, 4));   // 1.0h
+    if (household(householdId).heat_pump) {
+        list.push(controllableLoad("hot_water", "Hot water boost", "shower", 3.0, 4));   // 1.0h
+        list.push(controllableLoad("heating_boost", "Heating boost", "flame", 4.0, 4));  // 1.0h
+    }
     const c = contract(householdId);
     if (c.assets.ev_charger && c.assets.ev_battery_kwh > 0) {
         // A typical evening top-up of ~18 kWh at the wallbox.
@@ -37,4 +42,17 @@ export function deviceById(householdId: string, id: string): Device {
 
 function appliance(id: string, name: string, icon: string, energyKwh: number, durationSlots: number): Device {
     return { id, name, icon, energyKwh, durationSlots, powerKw: energyKwh / (durationSlots * DT), controllable: false };
+}
+
+function controllableLoad(id: string, name: string, icon: string, energyKwh: number, durationSlots: number): Device {
+    return { id, name, icon, energyKwh, durationSlots, powerKw: energyKwh / (durationSlots * DT), controllable: true };
+}
+
+/** EV sized from a charge target: assume 20% now → energy = capacity × (target − 20)/100. */
+export function evDevice(householdId: string, targetPct: number): Device {
+    const cap = contract(householdId).assets.ev_battery_kwh;
+    const energy = Math.max(0, cap * (Math.min(100, Math.max(20, targetPct)) - 20) / 100);
+    const powerKw = 11;
+    const durationSlots = Math.max(1, Math.ceil(energy / powerKw / DT));
+    return { id: "ev", name: "Car", icon: "car", energyKwh: energy, durationSlots, powerKw, controllable: true };
 }
