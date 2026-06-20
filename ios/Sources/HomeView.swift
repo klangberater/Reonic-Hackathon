@@ -8,26 +8,24 @@ struct HomeView: View {
     @AppStorage("appearance") private var appearance = "dark"
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                header
-                if vm.state != nil {
-                    anomalyCard
-                    verdictLine
-                    devicesSection
-                    moneyCard
-                } else if vm.isLoading {
-                    ProgressView("Reading your home…").frame(maxWidth: .infinity, minHeight: 280)
-                } else if let err = vm.errorText {
-                    errorCard(err)
-                }
+        VStack(alignment: .leading, spacing: 18) {
+            header
+            if vm.state != nil {
+                anomalyCard
+                verdictLine
+                devicesSection
+                moneyCard
+                Spacer(minLength: 0)
+            } else if vm.isLoading {
+                Spacer(); ProgressView("Reading your home…").frame(maxWidth: .infinity); Spacer()
+            } else if let err = vm.errorText {
+                Spacer(); errorCard(err); Spacer()
             }
-            .padding(20)
-            .padding(.bottom, 76)
         }
+        .padding(20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .warmScreen()
         .safeAreaInset(edge: .bottom) { askBar }
-        .refreshable { await vm.loadAll() }
         .task { if vm.state == nil { await vm.loadAll() } }
         .sheet(item: $selectedDevice) { d in
             DeviceSheetView(device: d, clock: vm.clock) { await vm.reloadDevices() }
