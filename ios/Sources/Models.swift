@@ -56,13 +56,15 @@ struct OptimizeResult: Decodable, Sendable {
     let source: String              // free | partial | paid
     let ownSharePct: Double
     let gridCostEur: Double
+    let durationHours: Double
     let breakdownKwh: Breakdown
-    let ribbon: [RibbonCell]
+    let slots: [DaySlot]
     let rationale: String
     struct Breakdown: Decodable, Sendable { let free: Double; let battery: Double; let grid: Double }
-    struct RibbonCell: Decodable, Sendable, Identifiable {
-        let hour: String; let source: String
-        var id: String { hour }
+    struct DaySlot: Decodable, Sendable, Identifiable {
+        let hour: Int; let start: String; let window: String; let source: String
+        let ownSharePct: Double; let gridCostEur: Double; let feasible: Bool
+        var id: Int { hour }
     }
 }
 

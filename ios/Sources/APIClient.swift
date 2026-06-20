@@ -26,8 +26,10 @@ struct APIClient: Sendable {
     }
 
     // MARK: writes
-    func commit(device: String, household: String = Config.defaultHousehold, clock: DemoClock) async throws -> CommitResponse {
-        try await post("/commit_load", body: ["household": household, "device": device, "clock": clock.rawValue])
+    func commit(device: String, start: String? = nil, household: String = Config.defaultHousehold, clock: DemoClock) async throws -> CommitResponse {
+        var body = ["household": household, "device": device, "clock": clock.rawValue]
+        if let start { body["start"] = start }
+        return try await post("/commit_load", body: body)
     }
     func reset(household: String = Config.defaultHousehold) async throws {
         let _: ResetResp = try await post("/reset", body: ["household": household])

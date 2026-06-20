@@ -84,7 +84,7 @@ export function optimizeLoad(householdId: string, device: Device, nowISO: string
 
     const total = device.energyKwh;
     const own = best.free + best.battery;
-    const ownSharePct = Math.round((own / total) * 100);
+    const ownSharePct = Math.min(100, Math.round((own / total) * 100));
     const source: Source = best.grid < 0.02 * total ? "free" : own > 0.02 * total ? "partial" : "paid";
     const startISO = recs[bestS].timestamp;
     const endISO = recs[Math.min(recs.length - 1, bestS + D)].timestamp;
@@ -102,7 +102,7 @@ export function optimizeLoad(householdId: string, device: Device, nowISO: string
         const o = r.free + r.battery;
         const src: Source = r.grid < 0.02 * total ? "free" : o > 0.02 * total ? "partial" : "paid";
         const endH = recs[Math.min(recs.length - 1, s + D)].timestamp;
-        slots.push({ hour: h, start: iso, window: `${hhmm(iso)}–${hhmm(endH)}`, source: src, ownSharePct: Math.round((o / total) * 100), gridCostEur: round(r.cost, 2), feasible: true });
+        slots.push({ hour: h, start: iso, window: `${hhmm(iso)}–${hhmm(endH)}`, source: src, ownSharePct: Math.min(100, Math.round((o / total) * 100)), gridCostEur: round(r.cost, 2), feasible: true });
     }
 
     return {
