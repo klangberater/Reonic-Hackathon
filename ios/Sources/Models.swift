@@ -140,3 +140,18 @@ enum PlanMode: String, CaseIterable, Identifiable, Sendable {
     var id: String { rawValue }
     var label: String { self == .cheapest ? "Cheapest" : self == .greenest ? "Greenest" : "Soonest" }
 }
+
+/// User-facing label for a task — an action verb on the actionable appliances; the heat
+/// boosts keep their backend name. The backend `name` stays semantic (used in the planner's
+/// generated sentences), so the verbs live UI-side only.
+func taskDisplayName(id: String, fallback: String) -> String {
+    switch id {
+    case "ev": return "Charge Car"
+    case "dishwasher": return "Run Dishwasher"
+    case "washing_machine": return "Run Washing Machine"
+    case "dryer": return "Run Dryer"
+    default: return fallback
+    }
+}
+extension Device { var displayName: String { taskDisplayName(id: id, fallback: name) } }
+extension PlanResult.PlannedTask { var displayName: String { taskDisplayName(id: device, fallback: name) } }

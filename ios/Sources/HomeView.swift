@@ -175,7 +175,7 @@ struct DeviceRow: View {
             ZStack { Circle().fill(tint.opacity(0.15)).frame(width: 54, height: 54)
                 Image(systemName: symbol).font(.system(size: 25)).foregroundStyle(tint) }
             VStack(alignment: .leading, spacing: 3) {
-                Text(device.name).font(.system(.title3).weight(.semibold)).foregroundStyle(Theme.ink)
+                Text(device.displayName).font(.system(.title3).weight(.semibold)).foregroundStyle(Theme.ink)
                 if let s = device.scheduled {
                     Text("\(s.window) · \(Theme.sourceLabel(s.source))").font(.subheadline.weight(.medium)).foregroundStyle(Theme.source(s.source))
                 } else {

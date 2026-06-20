@@ -49,7 +49,7 @@ struct PlanDayView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: symbol(d.icon)).foregroundStyle(Theme.green)
-                Text(d.name).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.ink)
+                Text(d.displayName).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.ink)
                 Spacer()
                 DatePicker("", selection: Binding(
                     get: { vm.selected[d.id]?.deadline ?? Date() },
@@ -142,7 +142,7 @@ struct PlanDayView: View {
 
     private func nudgeBar(_ t: PlanResult.PlannedTask) -> some View {
         HStack {
-            Text("\(t.name) \u{00B7} \(t.window)").font(.subheadline.weight(.medium)).foregroundStyle(Theme.ink)
+            Text("\(t.displayName) \u{00B7} \(t.window)").font(.subheadline.weight(.medium)).foregroundStyle(Theme.ink)
             Spacer()
             Button { vm.nudge(device: t.device, deltaHours: -1) } label: { Image(systemName: "minus.circle.fill") }
             Text("nudge").font(.caption).foregroundStyle(Theme.subtle)
@@ -159,7 +159,7 @@ struct PlanDayView: View {
                     Text(String(t.window.prefix(5))).font(.subheadline.weight(.bold)).foregroundStyle(Theme.ink)
                         .frame(width: 52, alignment: .leading)
                     Image(systemName: symbol(t.icon)).foregroundStyle(Theme.source(t.source))
-                    Text(t.name).font(.subheadline).foregroundStyle(Theme.ink)
+                    Text(t.displayName).font(.subheadline).foregroundStyle(Theme.ink)
                     Spacer()
                     Text(Theme.sourceLabel(t.source)).font(.caption).foregroundStyle(Theme.source(t.source))
                 }
@@ -191,7 +191,7 @@ private struct TaskCard: View {
         Button(action: onTap) {
             VStack(spacing: 8) {
                 Image(systemName: symbol).font(.system(size: 26)).foregroundStyle(selected ? .white : Theme.green)
-                Text(device.name).font(.subheadline.weight(.semibold))
+                Text(device.displayName).font(.subheadline.weight(.semibold))
                     .foregroundStyle(selected ? .white : Theme.ink).lineLimit(1)
             }
             .frame(maxWidth: .infinity).padding(.vertical, 20)

@@ -74,7 +74,7 @@ struct DeviceSheetView: View {
             ZStack { Circle().fill(tint.opacity(0.15)).frame(width: 46, height: 46)
                 Image(systemName: symbol).font(.system(size: 22)).foregroundStyle(tint) }
             VStack(alignment: .leading, spacing: 2) {
-                Text(device.name).font(.system(.title3).weight(.semibold)).foregroundStyle(Theme.ink)
+                Text(device.displayName).font(.system(.title3).weight(.semibold)).foregroundStyle(Theme.ink)
                 Text(String(format: "~%.1f kWh · %@", device.energyKwh, device.controllable ? "wallbox" : "appliance"))
                     .font(.caption).foregroundStyle(Theme.subtle)
             }

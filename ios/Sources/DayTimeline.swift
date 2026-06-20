@@ -64,7 +64,7 @@ struct DayTimeline: View {
                 .frame(width: max(8, width * ownFrac))
             HStack(spacing: 4) {
                 Image(systemName: symbol(t.icon)).font(.system(size: 11, weight: .bold))
-                Text(t.name).font(.system(size: 11, weight: .semibold)).lineLimit(1)
+                Text(t.displayName).font(.system(size: 11, weight: .semibold)).lineLimit(1)
             }
             .foregroundStyle(.white)
             .padding(.horizontal, 6)
