@@ -76,20 +76,34 @@ export function optimizeLoad(householdId: string, device: Device, nowISO: string
         return { free, battery, grid, cost };
     }
 
+    // kWh of already-committed load overlapping a candidate window — used to STAGGER tasks:
+    // among equally-good (equally-green) windows, prefer the one that runs while the fewest
+    // other planned loads are running. At solar noon every window is "free", so without this
+    // every task would pile onto the earliest slot ("everything at 13:00"); spreading them
+    // across the solar plateau turns the plan into a real, readable schedule while staying 100%
+    // solar. It never trades cost for spread — staggering only breaks exact ties.
+    const overlapAt = (s: number): number => { let o = 0; for (let t = s; t < s + D; t++) o += committedDraw(t) * DT; return o; };
+
     // search every feasible start; selection rule depends on the objective
-    let bestS = nowIdx, best = evalWindow(nowIdx);
+    let bestS = nowIdx, best = evalWindow(nowIdx), bestOv = overlapAt(nowIdx);
     for (let s = nowIdx; s + D <= horizonEnd; s++) {
         const r = evalWindow(s);
+        const ov = overlapAt(s);
         if (objective === "soonest") {
-            // earliest feasible start wins; tie-break by lower cost
-            if (s < bestS || (s === bestS && r.cost < best.cost - 1e-9)) { best = r; bestS = s; }
+            // earliest feasible start wins — the "just run it now" mode; deliberately no staggering
+            if (s < bestS) { best = r; bestS = s; bestOv = ov; }
         } else if (objective === "greenest") {
-            // maximise own energy (free + battery); tie-break lower cost, then earlier
+            // maximise own energy (free + battery); tie-break: less overlap (stagger), then cheaper
             const own = r.free + r.battery, bestOwn = best.free + best.battery;
-            if (own > bestOwn + 1e-9 || (Math.abs(own - bestOwn) < 1e-9 && r.cost < best.cost - 1e-9)) { best = r; bestS = s; }
+            const better = own > bestOwn + 1e-9
+                || (Math.abs(own - bestOwn) < 1e-9 && ov < bestOv - 1e-9)
+                || (Math.abs(own - bestOwn) < 1e-9 && Math.abs(ov - bestOv) < 1e-9 && r.cost < best.cost - 1e-9);
+            if (better) { best = r; bestS = s; bestOv = ov; }
         } else {
-            // cheapest: minimise grid cost; tie-break earliest (the loop's natural order keeps the earliest)
-            if (r.cost < best.cost - 1e-9) { best = r; bestS = s; }
+            // cheapest: minimise grid cost; tie-break: less overlap (stagger). Loop order keeps earliest on a full tie.
+            const better = r.cost < best.cost - 1e-9
+                || (Math.abs(r.cost - best.cost) < 1e-9 && ov < bestOv - 1e-9);
+            if (better) { best = r; bestS = s; bestOv = ov; }
         }
     }
 

@@ -46,6 +46,21 @@ test("tasks route around each other (no identical EV+dishwasher claim by acciden
   assert.ok(out.tasks.every((t) => t.window.includes("–")));
 });
 
+test("cheapest staggers equally-free tasks; soonest crams them at the same start", () => {
+  fresh();
+  const tasks = [
+    { device: "dishwasher", deadline: "2026-06-20T20:00:00" },
+    { device: "washing_machine", deadline: "2026-06-20T20:00:00" },
+  ];
+  const cheap = planDay(HH, NOW, "cheapest", tasks);
+  const cStarts = new Set(cheap.tasks.map((t) => t.startHour));
+  assert.equal(cStarts.size, 2, `cheapest should stagger to distinct starts, got ${[...cStarts]}`);
+  fresh();
+  const soon = planDay(HH, NOW, "soonest", tasks);
+  assert.ok(soon.tasks.every((t) => t.startHour === soon.tasks[0].startHour),
+    `soonest should cram at one start, got ${soon.tasks.map((t) => t.startHour)}`);
+});
+
 test("a pinned start is honored", () => {
   fresh();
   const out = planDay(HH, NOW, "cheapest", [
