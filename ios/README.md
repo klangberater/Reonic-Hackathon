@@ -22,14 +22,23 @@ xcodebuild -project Lumen.xcodeproj -scheme Lumen \
 ```
 
 ## Structure
-- `project.yml` — XcodeGen spec (the project file itself is gitignored)
-- `Sources/Config.swift` — API base URL + default household
-- `Sources/Models.swift` — Codable mirror of `/state`
-- `Sources/APIClient.swift` — async networking
-- `Sources/NowViewModel.swift` — `@MainActor` state, summer/winter clock, verdict line
-- `Sources/NowView.swift` — the glance screen (verdict hero, power-flow grid, metric tiles)
-- `Sources/Theme.swift` — palette
+- `project.yml` — XcodeGen spec (the `.xcodeproj` itself is gitignored)
+- `Sources/LumenApp.swift` — app entry
+- `Sources/RootPager.swift` — horizontal paging between Home and Plan-my-day (+ `PagerDots`)
+- `Sources/ClockStore.swift` — shared demo clock (live / winter), injected into both screens
+- `Sources/HomeView.swift` + `HomeViewModel.swift` — the glance (verdict, devices, money, anomaly card)
+- `Sources/PlanDayView.swift` + `PlanDayViewModel.swift` — pick tasks → solar-aware schedule
+- `Sources/DayTimeline.swift` — Canvas timeline (solar curve + split-shaded task blocks)
+- `Sources/DeviceSheetView.swift` — single-device picker (drag-to-choose window)
+- `Sources/FlowDetailView.swift` — live power-flow detail
+- `Sources/ChatView.swift` — grounded assistant (`/chat`)
+- `Sources/SettingsView.swift` — clock + appearance
+- `Sources/Models.swift` — Codable mirrors of the API
+- `Sources/APIClient.swift` — async `URLSession` networking
+- `Sources/Theme.swift` — semantic light/dark design tokens
+- `Sources/NotificationManager.swift` — local reminders
 
 ## Status
-Vertical slice done: the **glance** renders live from `/state` with a summer/winter toggle.
-Next: a Chat tab against `/chat` (streamed, grounded answers) once that endpoint lands.
+All three surfaces are live: **Home** (glance), **Plan my day** (schedule), and **Ask
+anything** (grounded chat). The clock defaults to live real time; **Winter demo** is a fixed
+scenario for the heat-pump anomaly. Architecture: [../docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md).

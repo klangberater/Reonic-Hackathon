@@ -16,9 +16,11 @@ terminates TLS for `getfletcher.ai`, so the iOS app gets HTTPS for free (no ATS 
 2. **Node 20+** (if not already present): `node -v` → install via nvm or apt if missing.
 3. **Env file** `/opt/reonic/.env` (chmod 600, owned by github-runner):
    ```
-   ANTHROPIC_API_KEY=sk-ant-...
+   OPENAI_API_KEY=sk-...        # required only for POST /chat (the grounded assistant)
+   OPENAI_MODEL=gpt-4o          # optional, this is the default
    PORT=8090
    DEMO_CLOCK=summer
+   # CHAT_TOKEN=...             # optional: if set, /chat requires header x-lumen-token
    ```
 4. **systemd unit:** copy `deploy/reonic-backend.service` → `/etc/systemd/system/`, then
    ```bash
