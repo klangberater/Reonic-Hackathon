@@ -61,11 +61,6 @@ export interface MonthlyBill {
     total_bill_eur: number; self_sufficiency_pct: number;
 }
 
-export interface InsightEvent {
-    household_id: string; type: string; severity: string;
-    period: string; title: string; detail: string; suggested_action: string;
-}
-
 function readJson<T>(file: string): T {
     return JSON.parse(fs.readFileSync(path.join(DATA_DIR, file), "utf8")) as T;
 }
@@ -101,12 +96,6 @@ let _bills: MonthlyBill[] | null = null;
 export function billsFor(id: string): MonthlyBill[] {
     if (!_bills) _bills = readJson<MonthlyBill[]>("monthly_bills.json");
     return _bills.filter((b) => b.household_id === id);
-}
-
-let _insights: InsightEvent[] | null = null;
-export function insightsFor(id: string): InsightEvent[] {
-    if (!_insights) _insights = readJson<InsightEvent[]>("insight_events.json");
-    return _insights.filter((e) => e.household_id === id);
 }
 
 interface Series { records: TimeseriesRecord[]; index: Map<string, number> }

@@ -32,6 +32,7 @@ final class ChatVM: ObservableObject {
 struct ChatView: View {
     @StateObject private var vm: ChatVM
     @Environment(\.dismiss) private var dismiss
+    private let initialPrompt: String?
 
     private let suggestions = [
         "Should I run the dishwasher now?",
@@ -39,7 +40,10 @@ struct ChatView: View {
         "Why might my bill be high?",
     ]
 
-    init(clock: DemoClock) { _vm = StateObject(wrappedValue: ChatVM(clock: clock)) }
+    init(clock: DemoClock, initialPrompt: String? = nil) {
+        _vm = StateObject(wrappedValue: ChatVM(clock: clock))
+        self.initialPrompt = initialPrompt
+    }
 
     var body: some View {
         NavigationStack {
@@ -63,6 +67,9 @@ struct ChatView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } } }
             .warmScreen()
+        }
+        .task {
+            if let p = initialPrompt, vm.messages.isEmpty { vm.send(p) }
         }
     }
 

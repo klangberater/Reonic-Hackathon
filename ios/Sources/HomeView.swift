@@ -6,7 +6,8 @@ struct HomeView: View {
     @State private var selectedDevice: Device?
     @State private var showFlow = false
     @State private var showChat = false
-    @AppStorage("appearance") private var appearance = "dark"
+    @State private var chatSeed: String?
+    @State private var showSettings = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -34,7 +35,8 @@ struct HomeView: View {
                 .presentationDetents([.large])
         }
         .sheet(isPresented: $showFlow) { if let s = vm.state { FlowDetailView(state: s) } }
-        .sheet(isPresented: $showChat) { ChatView(clock: vm.clock) }
+        .sheet(isPresented: $showChat, onDismiss: { chatSeed = nil }) { ChatView(clock: vm.clock, initialPrompt: chatSeed) }
+        .sheet(isPresented: $showSettings) { SettingsView(vm: vm).presentationDetents([.medium]) }
     }
 
     // Header: title + greeting (left), health status (right, where the sun was)
@@ -47,10 +49,10 @@ struct HomeView: View {
             Spacer()
             HStack(spacing: 12) {
                 PagerDots(current: 0)
-                Button { appearance = (appearance == "dark" ? "light" : "dark") } label: {
-                    Image(systemName: "circle.lefthalf.filled").font(.title3).foregroundStyle(Theme.subtle)
+                Button { showSettings = true } label: {
+                    Image(systemName: "gearshape").font(.title3).foregroundStyle(Theme.subtle)
                 }
-                .accessibilityLabel("Toggle appearance")
+                .accessibilityLabel("Settings")
                 statusChip
             }
         }
@@ -69,16 +71,26 @@ struct HomeView: View {
     // Detailed anomaly card — only when health is in alert
     @ViewBuilder private var anomalyCard: some View {
         if let a = vm.activeAnomaly {
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Needs a look", systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption.bold()).foregroundStyle(Theme.red)
-                Text(a.title).font(.system(.headline)).foregroundStyle(Theme.ink)
-                Text(a.detail).font(.subheadline).foregroundStyle(Theme.subtle).fixedSize(horizontal: false, vertical: true)
-                Text(a.suggestedAction).font(.footnote.weight(.medium)).foregroundStyle(Theme.red)
+            Button {
+                chatSeed = "Why is my heat pump using so much?"
+                showChat = true
+            } label: {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Needs a look", systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption.bold()).foregroundStyle(Theme.red)
+                    Text(a.title).font(.system(.headline)).foregroundStyle(Theme.ink)
+                    Text(a.detail).font(.subheadline).foregroundStyle(Theme.subtle).fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 6) {
+                        Text(a.suggestedAction).font(.footnote.weight(.medium)).foregroundStyle(Theme.red)
+                        Spacer(minLength: 4)
+                        Image(systemName: "sparkles").font(.caption2).foregroundStyle(Theme.red)
+                    }
+                }
+                .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                .background(Theme.redSoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.red.opacity(0.35), lineWidth: 1))
             }
-            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.redSoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.red.opacity(0.35), lineWidth: 1))
+            .buttonStyle(.plain)
         }
     }
 

@@ -10,6 +10,7 @@ import { optimizeLoad } from "./optimizeLoad";
 import { moneyForecast } from "./money";
 import { commitmentsFor } from "./ledger";
 import { snapshotFor, insightsFor as insightsBundle } from "./views";
+import { detectHeatpumpAnomaly } from "./anomaly";
 
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
 const MAX_TURNS = 6;
@@ -27,6 +28,7 @@ const TOOLS = [
         device: { type: "string", description: "device id: ev, dishwasher, or washing_machine" },
         deadline: { type: "string", description: "optional ISO timestamp the run must finish by" },
     }, ["device"]),
+    fn("explain_anomaly", "Weather-normalised evidence for a heat-pump anomaly: observed vs temperature-expected draw, % over, days, temp range, and whether other loads are normal. Call this for any 'why is my heat pump / bill so high' question. Returns null if nothing is wrong.", {}),
 ];
 
 function fn(name: string, description: string, props: Record<string, any>, required: string[] = []) {
@@ -50,6 +52,7 @@ function systemPrompt(householdId: string, nowISO: string, clock: string): strin
         `- Think in terms of energy SOURCE: free (your solar or battery) vs paid (grid). Money in euros.`,
         `- get_money: when "earning" is true the home is NET POSITIVE this month — a negative projected_total_eur is a CREDIT, not a cost. Say "you're on track to earn about €X", never "costs €X".`,
         `- To answer "when should I run X" or "is now a good time", call optimize_load for that device.`,
+        `- For "why is my heat pump / bill so high" or anything about a fault, call explain_anomaly. The evidence is weather-normalised: if observed draw far exceeds the temperature-expected draw, the cold does NOT explain it — say so plainly, then name the likely cause (defrost fault, low refrigerant, or thermostat misconfiguration) and suggest a service check. If other loads are normal, point out the excess is isolated to the heat pump. Never blame the weather when the evidence rules it out.`,
         `- Keep answers to 1–3 short sentences, warm and concrete. No JSON, no jargon, no markdown tables.`,
     ].join("\n");
 }
@@ -63,6 +66,7 @@ function makeExecutor(householdId: string, nowISO: string) {
             case "get_devices": return devicesFor(householdId).map((d) => ({ id: d.id, name: d.name, energy_kwh: d.energyKwh, controllable: d.controllable }));
             case "get_insights": return insightsBundle(householdId, nowISO);
             case "list_commitments": return commitmentsFor(householdId);
+            case "explain_anomaly": return detectHeatpumpAnomaly(householdId, nowISO) ?? { anomaly: null, note: "No active anomaly — the heat pump is tracking the weather normally." };
             case "optimize_load": {
                 try { return optimizeLoad(householdId, deviceById(householdId, String(args.device)), nowISO, args.deadline); }
                 catch (e: any) { return { error: String(e.message || e) }; }
