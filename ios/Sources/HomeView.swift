@@ -41,7 +41,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Lumen").font(.system(.largeTitle, design: .rounded).weight(.bold)).foregroundStyle(Theme.ink)
+                    Text("Lumen").font(.system(.largeTitle).weight(.bold)).foregroundStyle(Theme.ink)
                     if let s = vm.state { Text("\(greeting), \(firstName(s.householdName))").font(.subheadline).foregroundStyle(Theme.subtle) }
                 }
                 Spacer()
@@ -58,7 +58,7 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Label("Needs a look", systemImage: "exclamationmark.triangle.fill")
                     .font(.caption.bold()).foregroundStyle(Theme.red)
-                Text(a.title).font(.system(.headline, design: .rounded)).foregroundStyle(Theme.ink)
+                Text(a.title).font(.system(.headline)).foregroundStyle(Theme.ink)
                 Text(a.detail).font(.subheadline).foregroundStyle(Theme.subtle).fixedSize(horizontal: false, vertical: true)
                 Text(a.suggestedAction).font(.footnote.weight(.medium)).foregroundStyle(Theme.red)
             }
@@ -79,7 +79,7 @@ struct HomeView: View {
         Button { showFlow = true } label: {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: heroIcon).font(.title2).foregroundStyle(Theme.green)
-                Text(vm.verdict).font(.system(.title2, design: .rounded).weight(.semibold)).foregroundStyle(Theme.ink)
+                Text(vm.verdict).font(.system(.title2).weight(.semibold)).foregroundStyle(Theme.ink)
                     .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 4)
                 Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Theme.subtle).padding(.top, 7)
@@ -95,7 +95,7 @@ struct HomeView: View {
                 Image(systemName: "eurosign").font(.headline).foregroundStyle(Theme.amber) }
             VStack(alignment: .leading, spacing: 2) {
                 Text("forecast · this month").font(.caption).foregroundStyle(Theme.subtle)
-                Text(vm.moneyLine).font(.system(.title3, design: .rounded).weight(.bold)).foregroundStyle(Theme.ink)
+                Text(vm.moneyLine).font(.system(.title3).weight(.bold)).foregroundStyle(Theme.ink)
             }
             Spacer()
         }
@@ -104,7 +104,7 @@ struct HomeView: View {
 
     private var devicesSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("What do you want to run?").font(.system(.headline, design: .rounded)).foregroundStyle(Theme.ink)
+            Text("What do you want to run?").font(.system(.headline)).foregroundStyle(Theme.ink)
             ForEach(vm.devices) { d in
                 Button { selectedDevice = d } label: { DeviceRow(device: d) }.buttonStyle(.plain)
             }
@@ -144,7 +144,7 @@ struct HomeView: View {
     private func errorCard(_ err: String) -> some View {
         VStack(spacing: 10) {
             Image(systemName: "wifi.exclamationmark").font(.largeTitle).foregroundStyle(Theme.subtle)
-            Text("Couldn’t reach Lumen").font(.system(.headline, design: .rounded))
+            Text("Couldn’t reach Lumen").font(.system(.headline))
             Text(err).font(.footnote).foregroundStyle(Theme.subtle).multilineTextAlignment(.center)
             Button("Retry") { Task { await vm.loadAll() } }.buttonStyle(.borderedProminent).tint(Theme.green)
         }.frame(maxWidth: .infinity, minHeight: 260).padding()
@@ -172,7 +172,7 @@ struct DeviceRow: View {
             ZStack { Circle().fill(tint.opacity(0.15)).frame(width: 40, height: 40)
                 Image(systemName: symbol).font(.system(size: 18)).foregroundStyle(tint) }
             VStack(alignment: .leading, spacing: 2) {
-                Text(device.name).font(.system(.subheadline, design: .rounded).weight(.semibold)).foregroundStyle(Theme.ink)
+                Text(device.name).font(.system(.subheadline).weight(.semibold)).foregroundStyle(Theme.ink)
                 if let s = device.scheduled {
                     Text("\(s.window) · \(Theme.sourceLabel(s.source))").font(.caption.weight(.medium)).foregroundStyle(Theme.source(s.source))
                 } else {

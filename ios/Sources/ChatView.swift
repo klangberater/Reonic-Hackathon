@@ -68,7 +68,7 @@ struct ChatView: View {
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Ask me anything about your energy.").font(.system(.headline, design: .rounded)).foregroundStyle(Theme.subtle)
+            Text("Ask me anything about your energy.").font(.system(.headline)).foregroundStyle(Theme.subtle)
             ForEach(suggestions, id: \.self) { s in
                 Button { vm.send(s) } label: {
                     HStack(spacing: 8) {

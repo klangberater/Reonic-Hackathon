@@ -8,7 +8,7 @@ struct FlowDetailView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
-                Text("Right now").font(.system(.title2, design: .rounded).weight(.bold)).foregroundStyle(Theme.ink)
+                Text("Right now").font(.system(.title2).weight(.bold)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button { dismiss() } label: { Image(systemName: "xmark.circle.fill").font(.title3).foregroundStyle(Theme.subtle) }
             }

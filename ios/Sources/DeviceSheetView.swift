@@ -65,7 +65,7 @@ struct DeviceSheetView: View {
         HStack(spacing: 12) {
             Image(systemName: symbol).font(.system(size: 22)).foregroundStyle(Theme.subtle)
             VStack(alignment: .leading, spacing: 2) {
-                Text(device.name).font(.system(.title3, design: .rounded).weight(.semibold)).foregroundStyle(Theme.ink)
+                Text(device.name).font(.system(.title3).weight(.semibold)).foregroundStyle(Theme.ink)
                 Text(String(format: "~%.1f kWh · %@", device.energyKwh, device.controllable ? "wallbox" : "appliance"))
                     .font(.caption).foregroundStyle(Theme.subtle)
             }
@@ -77,7 +77,7 @@ struct DeviceSheetView: View {
     private func bestTime(_ r: OptimizeResult) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("best time").font(.caption).foregroundStyle(Theme.subtle)
-            Text(prettyWindow(r)).font(.system(size: 26, weight: .bold, design: .rounded)).foregroundStyle(Theme.ink)
+            Text(prettyWindow(r)).font(.system(size: 26, weight: .bold)).foregroundStyle(Theme.ink)
             HStack(spacing: 6) {
                 Image(systemName: Source(r.source) == .free ? "sun.max.fill" : Source(r.source) == .partial ? "cloud.sun.fill" : "bolt.fill")
                 Text(sourcePhrase(r)).font(.subheadline.weight(.medium))
@@ -126,7 +126,7 @@ struct DeviceSheetView: View {
     private func metric(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label).font(.caption).foregroundStyle(Theme.subtle)
-            Text(value).font(.system(.title3, design: .rounded).weight(.bold)).foregroundStyle(Theme.ink)
+            Text(value).font(.system(.title3).weight(.bold)).foregroundStyle(Theme.ink)
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
         .cardSurface(16)
@@ -139,7 +139,7 @@ struct DeviceSheetView: View {
             } label: {
                 HStack {
                     if vm.committing { ProgressView().tint(.white) }
-                    Text(vm.committing ? "Scheduling…" : "Schedule it").font(.system(.headline, design: .rounded))
+                    Text(vm.committing ? "Scheduling…" : "Schedule it").font(.system(.headline))
                 }
                 .frame(maxWidth: .infinity).padding(.vertical, 15)
                 .background(Theme.green, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
