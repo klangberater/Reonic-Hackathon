@@ -27,3 +27,9 @@ export function clearCommitments(householdId?: string): void {
     ledger.length = 0;
     ledger.push(...keep);
 }
+
+/** Remove a single device's commitment for a household (used when re-planning that device). */
+export function ledgerRemove(householdId: string, device: string): void {
+    const i = ledger.findIndex((x) => x.householdId === householdId && x.device === device);
+    if (i >= 0) ledger.splice(i, 1);
+}
