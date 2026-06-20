@@ -2,9 +2,14 @@ import SwiftUI
 
 struct PlanDayView: View {
     @StateObject private var vm: PlanDayViewModel
+    @ObservedObject private var clockStore: ClockStore
     @State private var selectedBlock: String?
+    @State private var showSettings = false
 
-    init(clock: ClockStore) { _vm = StateObject(wrappedValue: PlanDayViewModel(clockStore: clock)) }
+    init(clock: ClockStore) {
+        _vm = StateObject(wrappedValue: PlanDayViewModel(clockStore: clock))
+        _clockStore = ObservedObject(wrappedValue: clock)
+    }
 
     var body: some View {
         Group {
@@ -16,6 +21,31 @@ struct PlanDayView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .warmScreen()
         .task { if vm.devices.isEmpty { await vm.loadDevices() } }
+        .onChange(of: clockStore.clock) { _, _ in Task { await vm.loadDevices() } }
+        .sheet(isPresented: $showSettings) { SettingsView(clock: clockStore).presentationDetents([.medium]) }
+    }
+
+    // Settings + a quick health overview, mirroring Home's header. Sits atop each state.
+    private var topBar: some View {
+        HStack(spacing: 12) {
+            statusChip
+            Spacer()
+            PagerDots(current: 1)
+            Button { showSettings = true } label: {
+                Image(systemName: "gearshape").font(.title3).foregroundStyle(Theme.subtle)
+            }
+            .accessibilityLabel("Settings")
+        }
+    }
+
+    private var statusChip: some View {
+        let alert = vm.activeAnomaly != nil
+        return HStack(spacing: 6) {
+            Circle().fill(alert ? Theme.red : Theme.green).frame(width: 8, height: 8)
+            Text(alert ? "Attention" : "All good").font(.caption.weight(.medium)).foregroundStyle(alert ? Theme.red : Theme.green)
+        }
+        .padding(.horizontal, 11).padding(.vertical, 7)
+        .background(alert ? Theme.redSoft : Theme.greenSoft, in: Capsule())
     }
 
     // MARK: State 1 — pick
@@ -23,13 +53,10 @@ struct PlanDayView: View {
     private var pickState: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                HStack {
-                    Text("What do you want to do today?")
-                        .font(.system(.title2).weight(.bold)).foregroundStyle(Theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer()
-                    PagerDots(current: 1)
-                }
+                topBar
+                Text("What do you want to do today?")
+                    .font(.system(.title2).weight(.bold)).foregroundStyle(Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ForEach(vm.devices) { d in
                         TaskCard(device: d, selected: vm.selected[d.id] != nil) { vm.toggle(d) }
@@ -95,12 +122,17 @@ struct PlanDayView: View {
         if let p = vm.plan {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    HStack {
+                    HStack(spacing: 12) {
                         Button { vm.phase = .pick } label: {
                             Label("Edit tasks", systemImage: "chevron.left").font(.subheadline)
                         }.buttonStyle(.plain).foregroundStyle(Theme.subtle)
                         Spacer()
+                        statusChip
                         PagerDots(current: 1)
+                        Button { showSettings = true } label: {
+                            Image(systemName: "gearshape").font(.title3).foregroundStyle(Theme.subtle)
+                        }
+                        .accessibilityLabel("Settings")
                     }
                     summaryChip(p)
                     Picker("Mode", selection: Binding(get: { vm.mode }, set: { vm.setMode($0) })) {
