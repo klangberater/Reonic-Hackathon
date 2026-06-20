@@ -53,7 +53,14 @@ decision (midday-cheap dynamic prices), nudge (winter anomaly + bill forecast).
 - [ ] Add a token guard on `/chat` before exposing (it will call Claude = costs money; `/api/` is public)
 - [ ] Retire theo services once ours is fully confirmed (keep as fallback for now)
 
-## Next: MCP server + tool-loop + iOS app
-- [ ] MCP server (7 tools) over data/; backend Claude tool-loop; `/chat` (SSE)
-- [ ] iOS SwiftUI app → `https://getfletcher.ai/api` (NowScreen, ChatView, summer/winter toggle)
+## iOS app (vertical slice done)
+- [x] XcodeGen SwiftUI project (`ios/`), builds for simulator (Xcode 26.5)
+- [x] Glance screen (NowView) renders live `/state`: verdict hero, power-flow grid, metric tiles
+- [x] Summer/winter clock toggle (re-fetches; summer verified on sim, winter path verified via API)
+- [x] Points at `https://getfletcher.ai/api` — runs on sim as-is; real device needs a signing team
+- [ ] Chat tab against `/chat` (streamed grounded answers) — after that endpoint lands
+- [ ] Verdict line currently templated client-side → swap to LLM-generated when /chat exists
+
+## Next: MCP server + tool-loop
+- [ ] MCP server (7 tools) over data/; backend Claude tool-loop; `/chat` (SSE) + token guard
 - [ ] Add summer insight set to the transform; make get_insights date-aware
