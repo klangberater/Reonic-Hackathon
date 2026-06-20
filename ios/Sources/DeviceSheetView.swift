@@ -172,10 +172,26 @@ struct DeviceSheetView: View {
     }
     private func hour(_ iso: String) -> Int { Int(iso.dropFirst(11).prefix(2)) ?? 13 }
     private var tint: Color {
-        switch device.icon { case "car": return Theme.green; case "bowl": return Theme.amber; case "wash": return Theme.grid; default: return Theme.green }
+        switch device.icon {
+        case "car": return Theme.green
+        case "bowl": return Theme.amber
+        case "wash": return Theme.grid
+        case "dryer": return Theme.grid
+        case "shower": return Theme.amber
+        case "flame": return Theme.red
+        default: return Theme.green
+        }
     }
     private var symbol: String {
-        switch device.icon { case "car": return "car.fill"; case "bowl": return "dishwasher.fill"; case "wash": return "washer.fill"; default: return "powerplug.fill" }
+        switch device.icon {
+        case "car": return "car.fill"
+        case "bowl": return "dishwasher.fill"
+        case "wash": return "washer.fill"
+        case "dryer": return "dryer.fill"
+        case "shower": return "shower.fill"
+        case "flame": return "flame.fill"
+        default: return "powerplug.fill"
+        }
     }
     private func sourcePhrase(_ slot: OptimizeResult.DaySlot) -> String {
         switch Source(slot.source) {
