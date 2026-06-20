@@ -11,6 +11,7 @@ import { moneyForecast } from "./money";
 import { commitmentsFor, addCommitment, clearCommitments } from "./ledger";
 import { snapshotFor, insightsFor } from "./views";
 import { runChat } from "./openaiChat";
+import { planDay, PlanTaskInput } from "./planDay";
 
 const PORT = parseInt(process.env.PORT || "8090", 10);
 const HOST = "127.0.0.1";
@@ -68,6 +69,19 @@ app.get("/optimize_load", (req, res) => {
         const id = hid(req);
         const d = deviceById(id, req.query.device as string);
         res.json(optimizeLoad(id, d, resolveNow(clk(req), req.query.at as string), req.query.deadline as string));
+    } catch (e: any) { res.status(400).json({ error: String(e.message || e) }); }
+});
+
+// POST plan_day — schedule several tasks at once; computes AND commits to the shared ledger
+app.post("/plan_day", (req, res) => {
+    try {
+        const id = hid(req);
+        const now = resolveNow(clk(req), req.body.at);
+        const mode = (req.body.mode as string) || "cheapest";
+        const tasks = Array.isArray(req.body.tasks) ? (req.body.tasks as PlanTaskInput[]) : [];
+        if (!tasks.length) return res.status(400).json({ error: "tasks required" });
+        if (!["cheapest", "greenest", "soonest"].includes(mode)) return res.status(400).json({ error: "bad mode" });
+        res.json(planDay(id, now, mode as any, tasks));
     } catch (e: any) { res.status(400).json({ error: String(e.message || e) }); }
 });
 
