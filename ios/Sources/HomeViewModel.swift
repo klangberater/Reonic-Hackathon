@@ -12,7 +12,7 @@ final class HomeViewModel: ObservableObject {
     @Published var money: Money?
     @Published var devices: [Device] = []
     @Published var insights: Insights?
-    @Published var isLoading = false
+    @Published var isLoading = true   // render the loading state immediately so Home is never an empty page
     @Published var errorText: String?
 
     let api = APIClient()
