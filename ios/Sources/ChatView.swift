@@ -62,18 +62,23 @@ struct ChatView: View {
             .navigationTitle("Ask Lumen")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } } }
+            .warmScreen()
         }
     }
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Ask me anything about your energy.").font(.headline).foregroundStyle(Theme.subtle)
+            Text("Ask me anything about your energy.").font(.system(.headline, design: .rounded)).foregroundStyle(Theme.subtle)
             ForEach(suggestions, id: \.self) { s in
                 Button { vm.send(s) } label: {
-                    Text(s).font(.subheadline)
-                        .padding(.horizontal, 14).padding(.vertical, 10)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Theme.card, in: RoundedRectangle(cornerRadius: 12))
+                    HStack(spacing: 8) {
+                        Image(systemName: "sparkles").font(.caption).foregroundStyle(Theme.green)
+                        Text(s).font(.subheadline).foregroundStyle(Theme.ink)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .cardSurface(14)
                 }.buttonStyle(.plain)
             }
         }.padding(.top, 8)
@@ -83,9 +88,10 @@ struct ChatView: View {
         HStack {
             if m.role == "user" { Spacer(minLength: 40) }
             Text(m.content)
-                .padding(.horizontal, 14).padding(.vertical, 10)
+                .padding(.horizontal, 15).padding(.vertical, 11)
                 .background(m.role == "user" ? Theme.green : Theme.card,
-                            in: RoundedRectangle(cornerRadius: 16))
+                            in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(m.role == "assistant" ? RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.hairline.opacity(0.5), lineWidth: 0.5) : nil)
                 .foregroundStyle(m.role == "user" ? .white : Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             if m.role == "assistant" { Spacer(minLength: 40) }

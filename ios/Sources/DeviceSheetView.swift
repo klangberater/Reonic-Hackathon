@@ -56,6 +56,8 @@ struct DeviceSheetView: View {
             }
         }
         .padding(22)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .warmScreen()
         .task { await vm.load() }
     }
 
@@ -63,7 +65,7 @@ struct DeviceSheetView: View {
         HStack(spacing: 12) {
             Image(systemName: symbol).font(.system(size: 22)).foregroundStyle(Theme.subtle)
             VStack(alignment: .leading, spacing: 2) {
-                Text(device.name).font(.title3.weight(.semibold))
+                Text(device.name).font(.system(.title3, design: .rounded).weight(.semibold)).foregroundStyle(Theme.ink)
                 Text(String(format: "~%.1f kWh · %@", device.energyKwh, device.controllable ? "wallbox" : "appliance"))
                     .font(.caption).foregroundStyle(Theme.subtle)
             }
@@ -75,14 +77,14 @@ struct DeviceSheetView: View {
     private func bestTime(_ r: OptimizeResult) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("best time").font(.caption).foregroundStyle(Theme.subtle)
-            Text(prettyWindow(r)).font(.system(size: 26, weight: .bold))
+            Text(prettyWindow(r)).font(.system(size: 26, weight: .bold, design: .rounded)).foregroundStyle(Theme.ink)
             HStack(spacing: 6) {
                 Image(systemName: Source(r.source) == .free ? "sun.max.fill" : Source(r.source) == .partial ? "cloud.sun.fill" : "bolt.fill")
                 Text(sourcePhrase(r)).font(.subheadline.weight(.medium))
             }
             .foregroundStyle(Theme.source(r.source))
-            .padding(.horizontal, 10).padding(.vertical, 5)
-            .background(Theme.source(r.source).opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+            .padding(.horizontal, 12).padding(.vertical, 6)
+            .background(Theme.sourceSoft(r.source), in: Capsule())
         }
     }
 
@@ -124,10 +126,10 @@ struct DeviceSheetView: View {
     private func metric(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label).font(.caption).foregroundStyle(Theme.subtle)
-            Text(value).font(.title3.weight(.bold)).foregroundStyle(Theme.ink)
+            Text(value).font(.system(.title3, design: .rounded).weight(.bold)).foregroundStyle(Theme.ink)
         }
-        .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.card, in: RoundedRectangle(cornerRadius: 14))
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+        .cardSurface(16)
     }
 
     private func confirm(_ r: OptimizeResult) -> some View {
@@ -137,10 +139,10 @@ struct DeviceSheetView: View {
             } label: {
                 HStack {
                     if vm.committing { ProgressView().tint(.white) }
-                    Text(vm.committing ? "Scheduling…" : "Schedule it").font(.headline)
+                    Text(vm.committing ? "Scheduling…" : "Schedule it").font(.system(.headline, design: .rounded))
                 }
-                .frame(maxWidth: .infinity).padding(.vertical, 14)
-                .background(Theme.green, in: RoundedRectangle(cornerRadius: 14))
+                .frame(maxWidth: .infinity).padding(.vertical, 15)
+                .background(Theme.green, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .foregroundStyle(.white)
             }
             .disabled(vm.committing)

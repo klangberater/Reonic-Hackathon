@@ -8,7 +8,7 @@ struct FlowDetailView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
-                Text("Right now").font(.title2.bold())
+                Text("Right now").font(.system(.title2, design: .rounded).weight(.bold)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button { dismiss() } label: { Image(systemName: "xmark.circle.fill").font(.title3).foregroundStyle(Theme.subtle) }
             }
@@ -31,10 +31,12 @@ struct FlowDetailView: View {
                 Text(String(format: "%+.1f kW", state.netKw)).font(.title3.weight(.bold))
                     .foregroundStyle(state.netKw >= 0 ? Theme.green : Theme.grid)
             }
-            .padding(14).background(Theme.card, in: RoundedRectangle(cornerRadius: 14))
+            .padding(14).cardSurface(14)
             Spacer()
         }
         .padding(22)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .warmScreen()
         .presentationDetents([.medium, .large])
     }
 
@@ -46,6 +48,6 @@ struct FlowDetailView: View {
             Text(sub).font(.caption).foregroundStyle(Theme.subtle)
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.card, in: RoundedRectangle(cornerRadius: 16))
+        .cardSurface(16)
     }
 }
