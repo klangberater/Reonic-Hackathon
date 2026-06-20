@@ -93,7 +93,7 @@ struct CommitResponse: Decodable, Sendable {
 enum DemoClock: String, CaseIterable, Identifiable, Sendable {
     case summer, winter
     var id: String { rawValue }
-    var label: String { self == .summer ? "Summer · now" : "Winter" }
+    var label: String { self == .summer ? "Live" : "Winter demo" }
 }
 
 // MARK: - /chat

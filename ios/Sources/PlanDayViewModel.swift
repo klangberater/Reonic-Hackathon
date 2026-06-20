@@ -76,10 +76,16 @@ import SwiftUI
         }
     }
 
-    /// The demo clock's "now" as a Date (summer 2026-06-20T13:00, winter 2026-01-15T08:00).
+    /// The clock's "now": summer tracks the real wall clock (pinned to the data year so it
+    /// exists in the dataset, matching the backend); winter stays fixed for the anomaly demo.
     private func nowDate() -> Date {
-        let iso = clock == .summer ? "2026-06-20T13:00:00" : "2026-01-15T08:00:00"
-        return Self.formatter.date(from: iso) ?? Date()
+        if clock == .winter { return Self.formatter.date(from: "2026-01-15T08:00:00") ?? Date() }
+        let cal = berlinCal
+        var c = cal.dateComponents([.year, .month, .day, .hour, .minute], from: Date())
+        c.year = 2026
+        c.minute = ((c.minute ?? 0) / 15) * 15
+        c.second = 0
+        return cal.date(from: c) ?? Date()
     }
     private func iso(from d: Date) -> String { Self.formatter.string(from: d) }
 
