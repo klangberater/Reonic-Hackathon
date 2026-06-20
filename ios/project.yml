@@ -12,6 +12,7 @@ settings:
     GENERATE_INFOPLIST_FILE: YES
     SWIFT_VERSION: "5.0"            # Swift 5 language mode — avoids strict-concurrency churn during the hackathon
     INFOPLIST_KEY_CFBundleDisplayName: "Lumen"
+    INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO    # only standard HTTPS → skip the compliance gate
     INFOPLIST_KEY_UILaunchScreen_Generation: YES
     INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
     INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
