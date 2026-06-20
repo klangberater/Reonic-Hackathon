@@ -51,6 +51,9 @@ struct PlanDayView: View {
                 Image(systemName: symbol(d.icon)).foregroundStyle(Theme.green)
                 Text(d.displayName).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.ink)
                 Spacer()
+                if let input = vm.selected[d.id] {
+                    Text(vm.dayHint(for: input.deadline)).font(.caption).foregroundStyle(Theme.subtle)
+                }
                 DatePicker("", selection: Binding(
                     get: { vm.selected[d.id]?.deadline ?? Date() },
                     set: { vm.selected[d.id]?.deadline = $0 }

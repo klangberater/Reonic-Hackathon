@@ -48,7 +48,7 @@ import SwiftUI
         let inputs: [PlanTaskInput] = selected.map { (id, input) in
             PlanTaskInput(
                 device: id,
-                deadline: iso(from: input.deadline),
+                deadline: iso(from: normalizedDeadline(input.deadline)),
                 target: id == "ev" ? input.target : nil,
                 start: nudged[id]
             )
@@ -82,6 +82,38 @@ import SwiftUI
         return Self.formatter.date(from: iso) ?? Date()
     }
     private func iso(from d: Date) -> String { Self.formatter.string(from: d) }
+
+    private var berlinCal: Calendar {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "Europe/Berlin") ?? .current
+        return c
+    }
+
+    /// Resolve a picked time-of-day into a concrete deadline. The picker only gives a time, so
+    /// we anchor it to the demo day and roll it to the next day when that time has already passed
+    /// on the real clock (pick 11am at 18:27 → tomorrow 11am). The planner reasons from the demo
+    /// "now", so the result is always strictly after it.
+    func normalizedDeadline(_ chosen: Date) -> Date {
+        let cal = berlinCal
+        let vnow = nowDate()
+        let hm = cal.dateComponents([.hour, .minute], from: chosen)
+        var deadline = cal.date(bySettingHour: hm.hour ?? 20, minute: hm.minute ?? 0, second: 0, of: vnow) ?? vnow
+        let nowHM = cal.dateComponents([.hour, .minute], from: Date())
+        let chosenMin = (hm.hour ?? 0) * 60 + (hm.minute ?? 0)
+        let realMin = (nowHM.hour ?? 0) * 60 + (nowHM.minute ?? 0)
+        if chosenMin <= realMin { deadline = cal.date(byAdding: .day, value: 1, to: deadline) ?? deadline }
+        while deadline <= vnow { deadline = cal.date(byAdding: .day, value: 1, to: deadline) ?? deadline }
+        return deadline
+    }
+
+    /// "today" / "tomorrow" / "+2d" label for a picked deadline, relative to the demo day.
+    func dayHint(for chosen: Date) -> String {
+        let cal = berlinCal
+        let days = cal.dateComponents([.day],
+            from: cal.startOfDay(for: nowDate()),
+            to: cal.startOfDay(for: normalizedDeadline(chosen))).day ?? 0
+        return days <= 0 ? "today" : days == 1 ? "tomorrow" : "+\(days)d"
+    }
     private func isoAtHour(_ h: Int) -> String {
         let cal = Calendar.current
         let base = cal.date(bySettingHour: h, minute: 0, second: 0, of: nowDate()) ?? nowDate()
