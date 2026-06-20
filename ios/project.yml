@@ -26,5 +26,5 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.getfletcher.lumen
         TARGETED_DEVICE_FAMILY: "1"   # iPhone
-        # Signing: set DEVELOPMENT_TEAM in Xcode to run on a real device.
         CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: B7RGVXV5VT
