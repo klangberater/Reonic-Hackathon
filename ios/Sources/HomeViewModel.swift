@@ -48,11 +48,11 @@ final class HomeViewModel: ObservableObject {
         guard let s = state else { return "" }
         switch s.status {
         case "exporting_surplus":
-            return "You're running on free solar right now — and sending \(fmt(s.grid.flowKw)) kW back to the grid."
+            return "Running on free solar — sending \(fmt(s.grid.flowKw)) kW to the grid."
         case "drawing_grid":
-            return "You're drawing \(fmt(-s.grid.flowKw)) kW from the grid — the sun isn't covering the house right now."
+            return "Pulling \(fmt(-s.grid.flowKw)) kW from the grid right now."
         default:
-            return "You're running entirely on your own power right now."
+            return "Running on your own power right now."
         }
     }
 

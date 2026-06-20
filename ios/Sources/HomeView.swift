@@ -16,7 +16,6 @@ struct HomeView: View {
                     verdictLine
                     devicesSection
                     moneyCard
-                    ForEach(vm.proactiveCards) { proactiveCard($0) }
                 } else if vm.isLoading {
                     ProgressView("Reading your home…").frame(maxWidth: .infinity, minHeight: 280)
                 } else if let err = vm.errorText {
@@ -117,19 +116,6 @@ struct HomeView: View {
             Spacer()
         }
         .padding(16).cardSurface()
-    }
-
-    private func proactiveCard(_ e: InsightEvent) -> some View {
-        HStack(spacing: 12) {
-            ZStack { Circle().fill(Theme.greenSoft).frame(width: 38, height: 38)
-                Image(systemName: e.type == "nudge" ? "lightbulb.fill" : "chart.line.uptrend.xyaxis").foregroundStyle(Theme.green) }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(e.title).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.ink)
-                Text(e.suggestedAction).font(.caption).foregroundStyle(Theme.subtle)
-            }
-            Spacer()
-        }
-        .padding(14).cardSurface()
     }
 
     private var askBar: some View {
