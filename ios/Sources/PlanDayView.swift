@@ -80,9 +80,14 @@ struct PlanDayView: View {
             VStack(alignment: .leading, spacing: 18) {
                 topBar
                 verdictLine
-                Text("What do you want to do today?")
-                    .font(.system(.title2).weight(.bold)).foregroundStyle(Theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("What are you planning to do today?")
+                        .font(.system(.title2).weight(.bold)).foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Pick what you need done — I'll find each one the cheapest, sunniest slot.")
+                        .font(.subheadline).foregroundStyle(Theme.subtle)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ForEach(vm.devices) { d in
                         TaskCard(device: d, selected: vm.selected[d.id] != nil) { vm.toggle(d) }
@@ -132,7 +137,9 @@ struct PlanDayView: View {
             HStack {
                 if vm.isLoading { ProgressView().tint(.white) }
                 Image(systemName: "wand.and.stars")
-                Text(vm.isLoading ? "Planning\u{2026}" : "Make my plan").font(.headline)
+                Text(vm.isLoading ? "Planning\u{2026}"
+                     : vm.selected.isEmpty ? "Make my plan"
+                     : "Make my plan \u{00B7} \(vm.selected.count)").font(.headline)
             }
             .frame(maxWidth: .infinity).padding(.vertical, 15)
             .background(vm.selected.isEmpty ? Theme.hairline : Theme.green,
@@ -251,17 +258,32 @@ private struct TaskCard: View {
     var body: some View {
         Button(action: onTap) {
             VStack(spacing: 8) {
-                Image(systemName: symbol).font(.system(size: 26)).foregroundStyle(selected ? .white : Theme.green)
+                Image(systemName: symbol).font(.system(size: 26)).foregroundStyle(Theme.green)
                 Text(device.displayName).font(.subheadline.weight(.semibold))
-                    .foregroundStyle(selected ? .white : Theme.ink)
+                    .foregroundStyle(Theme.ink)
                     .multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.8)
             }
             .frame(maxWidth: .infinity).padding(.vertical, 20)
-            .background(selected ? Theme.green : Theme.card,
+            .background(selected ? Theme.greenSoft : Theme.card,
                         in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .strokeBorder(selected ? Theme.green : Theme.hairline, lineWidth: 1))
+            .overlay(alignment: .topTrailing) { selectionMark }
         }.buttonStyle(.plain)
+    }
+
+    // Always-visible selection affordance: filled green check when picked, empty circle otherwise.
+    @ViewBuilder private var selectionMark: some View {
+        Group {
+            if selected {
+                Image(systemName: "checkmark.circle.fill")
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(.white, Theme.green)
+            } else {
+                Image(systemName: "circle").foregroundStyle(Theme.subtle.opacity(0.6))
+            }
+        }
+        .font(.title3).padding(10)
     }
     private var symbol: String {
         switch device.icon {
