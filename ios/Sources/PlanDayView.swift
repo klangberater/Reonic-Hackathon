@@ -348,20 +348,40 @@ struct PlanDayView: View {
     }
 
     private func orderedList(_ p: PlanResult) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(p.tasks.sorted { $0.startHour < $1.startHour }) { t in
+        // Chronological by real start datetime (so tonight sorts before tomorrow morning),
+        // grouped under Today / Tomorrow day separators.
+        let sorted = p.tasks.sorted { $0.start < $1.start }
+        return VStack(alignment: .leading, spacing: 8) {
+            ForEach(Array(sorted.enumerated()), id: \.element.device) { idx, t in
+                if idx == 0 || vm.dayLabel(forISO: t.start) != vm.dayLabel(forISO: sorted[idx - 1].start) {
+                    Text(vm.dayLabel(forISO: t.start))
+                        .font(.caption.weight(.bold)).foregroundStyle(Theme.subtle)
+                        .padding(.top, idx == 0 ? 0 : 8)
+                }
                 HStack(spacing: 10) {
                     Text(String(t.window.prefix(5))).font(.subheadline.weight(.bold)).foregroundStyle(Theme.ink)
                         .frame(width: 52, alignment: .leading)
                     Image(systemName: symbol(t.icon)).foregroundStyle(Theme.source(t.source))
                     Text(t.displayName).font(.subheadline).foregroundStyle(Theme.ink)
                     Spacer()
-                    Text(Theme.sourceLabel(t.source)).font(.caption).foregroundStyle(Theme.source(t.source))
+                    Text(sourceText(t)).font(.caption).foregroundStyle(Theme.source(t.source))
                 }
                 .padding(.vertical, 4)
             }
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading).cardSurface(16)
+    }
+
+    /// "free", "free (Battery)", "free (Solar)" — names the own source so a night-time free run reads true.
+    private func sourceText(_ t: PlanResult.PlannedTask) -> String {
+        let base = Theme.sourceLabel(t.source)
+        guard t.source == "free" else { return base }
+        switch t.ownSource {
+        case "battery": return "free (Battery)"
+        case "solar": return "free (Solar)"
+        case "mixed": return "free (Solar + Battery)"
+        default: return base
+        }
     }
 
     private func symbol(_ icon: String) -> String {

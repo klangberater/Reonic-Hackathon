@@ -137,6 +137,7 @@ struct PlanResult: Decodable, Sendable {
         let start: String; let startHour: Int; let window: String
         let durationHours: Double; let source: String
         let ownSharePct: Double; let gridCostEur: Double; let controllable: Bool
+        let ownSource: String?      // solar | battery | mixed | none — explains a night-time "free" run
         var id: String { device }
     }
 }

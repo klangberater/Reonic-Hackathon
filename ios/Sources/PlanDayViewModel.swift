@@ -205,6 +205,14 @@ import SwiftUI
         return deadline
     }
 
+    /// "Today" / "Tomorrow" / "+Nd" for a planned task's start ISO, relative to the demo day.
+    func dayLabel(forISO iso: String) -> String {
+        let cal = berlinCal
+        guard let d = Self.formatter.date(from: String(iso.prefix(19))) else { return "" }
+        let days = cal.dateComponents([.day], from: cal.startOfDay(for: nowDate()), to: cal.startOfDay(for: d)).day ?? 0
+        return days <= 0 ? "Today" : days == 1 ? "Tomorrow" : "+\(days)d"
+    }
+
     /// "today" / "tomorrow" / "+2d" label for a picked deadline, relative to the demo day.
     func dayHint(for chosen: Date) -> String {
         let cal = berlinCal

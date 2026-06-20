@@ -13,10 +13,11 @@ const DT = 0.25;
 const CO2_KG_PER_KWH = 0.40;   // German grid average
 
 export interface PlanTaskInput { device: string; deadline?: string; target?: number; start?: string }
+export type OwnSource = "solar" | "battery" | "mixed" | "none";
 export interface PlannedTask {
     device: string; name: string; icon: string; start: string; startHour: number;
     window: string; durationHours: number; source: Source; ownSharePct: number;
-    gridCostEur: number; controllable: boolean;
+    gridCostEur: number; controllable: boolean; ownSource: OwnSource;
 }
 export interface CurvePoint { hour: number; solarKw: number }
 export interface PlanResult {
@@ -95,9 +96,12 @@ export function planDay(householdId: string, nowISO: string, mode: Objective, in
             startIdx, durationSlots: device.durationSlots, powerKw: device.powerKw, source: placed.source,
         });
 
-        const own = placed.breakdownKwh.free + placed.breakdownKwh.battery;
+        const solarK = placed.breakdownKwh.free, battK = placed.breakdownKwh.battery;
+        const own = solarK + battK;
         totalOwn += own; totalKwh += device.energyKwh;
         planGridKwh += placed.breakdownKwh.grid; planCost += placed.gridCostEur;
+        // which of the home's own sources covered it — lets the UI explain a night-time "free" run
+        const ownSource: OwnSource = own <= 0.01 ? "none" : solarK <= 0.01 ? "battery" : battK <= 0.01 ? "solar" : "mixed";
 
         const base = baselineAt(householdId, device, baselineStartIdx(householdId, device, nowIdx, input.deadline));
         baseGridKwh += base.gridKwh; baseCost += base.cost;
@@ -106,7 +110,7 @@ export function planDay(householdId: string, nowISO: string, mode: Objective, in
             device: device.id, name: device.name, icon: device.icon, start,
             startHour: hourOf(start), window: placed.window, durationHours: round(device.durationSlots * DT, 2),
             source: placed.source, ownSharePct: device.energyKwh > 0 ? Math.min(100, Math.round((own / device.energyKwh) * 100)) : 0,
-            gridCostEur: round(placed.gridCostEur, 2), controllable: device.controllable,
+            gridCostEur: round(placed.gridCostEur, 2), controllable: device.controllable, ownSource,
         });
     }
 
