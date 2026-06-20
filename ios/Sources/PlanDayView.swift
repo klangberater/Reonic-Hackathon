@@ -89,17 +89,35 @@ struct PlanDayView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    ForEach(vm.devices) { d in
+                    ForEach(vm.planDevices) { d in
                         TaskCard(device: d, selected: vm.selected[d.id] != nil) { vm.toggle(d) }
                     }
                 }
-                ForEach(vm.devices.filter { vm.selected[$0.id] != nil }) { d in
+                ForEach(vm.planDevices.filter { vm.selected[$0.id] != nil }) { d in
                     taskRow(d)
                 }
                 if let e = vm.errorText { Text(e).font(.footnote).foregroundStyle(Theme.red) }
                 makeButton
+                anomalyCard
             }
             .padding(20)
+        }
+    }
+
+    // Surfaced below "Make my plan" when the home has a live anomaly (e.g. the heat-pump fault).
+    @ViewBuilder private var anomalyCard: some View {
+        if let a = vm.activeAnomaly {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Needs a look", systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption.bold()).foregroundStyle(Theme.red)
+                Text(a.title).font(.system(.headline)).foregroundStyle(Theme.ink)
+                Text(a.detail).font(.subheadline).foregroundStyle(Theme.subtle)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(a.suggestedAction).font(.footnote.weight(.medium)).foregroundStyle(Theme.red)
+            }
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.redSoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.red.opacity(0.35), lineWidth: 1))
         }
     }
 

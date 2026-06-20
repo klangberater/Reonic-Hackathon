@@ -27,6 +27,10 @@ import SwiftUI
         insights?.events.first { $0.active && $0.type == "anomaly" && $0.severity == "high" }
     }
 
+    /// Tasks offered on the Plan screen — the hot-water and heating boosts are excluded.
+    private static let hiddenDeviceIDs: Set<String> = ["hot_water", "heating_boost"]
+    var planDevices: [Device] { devices.filter { !Self.hiddenDeviceIDs.contains($0.id) } }
+
     /// Same wording as Home's verdict line.
     var verdict: String {
         guard let s = state else { return "" }
