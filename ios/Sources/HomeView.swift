@@ -6,7 +6,7 @@ struct HomeView: View {
     @State private var showFlow = false
     @State private var showChat = false
     @State private var chatSeed: String?
-    @AppStorage("appearance") private var appearance = "dark"
+    @State private var showSettings = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -34,6 +34,7 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showFlow) { if let s = vm.state { FlowDetailView(state: s) } }
         .sheet(isPresented: $showChat, onDismiss: { chatSeed = nil }) { ChatView(clock: vm.clock, initialPrompt: chatSeed) }
+        .sheet(isPresented: $showSettings) { SettingsView(vm: vm).presentationDetents([.medium]) }
     }
 
     // Header: title + greeting (left), health status (right, where the sun was)
@@ -45,10 +46,10 @@ struct HomeView: View {
             }
             Spacer()
             HStack(spacing: 12) {
-                Button { appearance = (appearance == "dark" ? "light" : "dark") } label: {
-                    Image(systemName: "circle.lefthalf.filled").font(.title3).foregroundStyle(Theme.subtle)
+                Button { showSettings = true } label: {
+                    Image(systemName: "gearshape").font(.title3).foregroundStyle(Theme.subtle)
                 }
-                .accessibilityLabel("Toggle appearance")
+                .accessibilityLabel("Settings")
                 statusChip
             }
         }
