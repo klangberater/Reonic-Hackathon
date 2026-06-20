@@ -14,31 +14,24 @@ struct HomeView: View {
     @State private var showSettings = false
 
     var body: some View {
-        Group {
-            if vm.state != nil {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 18) {
-                        header
-                        anomalyCard
-                        verdictLine
-                        devicesSection
-                        moneyCard
-                    }
-                    .padding(20)
+        // Always render the header so this page is never an empty view — a paged TabView skips a
+        // selected page whose content is empty, which would strand the app on the Plan screen.
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                header
+                if vm.state != nil {
+                    anomalyCard
+                    verdictLine
+                    devicesSection
+                    moneyCard
+                } else if let err = vm.errorText {
+                    errorCard(err)
+                } else {
+                    ProgressView("Reading your home…")
+                        .frame(maxWidth: .infinity).padding(.top, 80)
                 }
-            } else if vm.isLoading {
-                VStack(alignment: .leading, spacing: 18) {
-                    header
-                    Spacer(); ProgressView("Reading your home…").frame(maxWidth: .infinity); Spacer()
-                }
-                .padding(20)
-            } else if let err = vm.errorText {
-                VStack(alignment: .leading, spacing: 18) {
-                    header
-                    Spacer(); errorCard(err); Spacer()
-                }
-                .padding(20)
             }
+            .padding(20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .warmScreen()

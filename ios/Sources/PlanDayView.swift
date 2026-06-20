@@ -5,6 +5,7 @@ struct PlanDayView: View {
     @ObservedObject private var clockStore: ClockStore
     @State private var selectedBlock: String?
     @State private var showSettings = false
+    @State private var showFlow = false
 
     init(clock: ClockStore) {
         _vm = StateObject(wrappedValue: PlanDayViewModel(clockStore: clock))
@@ -23,6 +24,30 @@ struct PlanDayView: View {
         .task { if vm.devices.isEmpty { await vm.loadDevices() } }
         .onChange(of: clockStore.clock) { _, _ in Task { await vm.loadDevices() } }
         .sheet(isPresented: $showSettings) { SettingsView(clock: clockStore).presentationDetents([.medium]) }
+        .sheet(isPresented: $showFlow) { if let s = vm.state { FlowDetailView(state: s) } }
+    }
+
+    // Verdict: small, informative line (tap for the live flow) — same as Home.
+    @ViewBuilder private var verdictLine: some View {
+        if vm.state != nil {
+            Button { showFlow = true } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: heroIcon).font(.footnote).foregroundStyle(Theme.green)
+                    Text(vm.verdict).font(.subheadline).foregroundStyle(Theme.subtle)
+                        .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.right").font(.caption2).foregroundStyle(Theme.subtle)
+                }
+            }.buttonStyle(.plain)
+        }
+    }
+
+    private var heroIcon: String {
+        switch vm.state?.status {
+        case "exporting_surplus": return "sun.max.fill"
+        case "drawing_grid": return "bolt.fill"
+        default: return "leaf.fill"
+        }
     }
 
     // Settings + a quick health overview, mirroring Home's header. Sits atop each state.
@@ -54,21 +79,45 @@ struct PlanDayView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 topBar
-                Text("What do you want to do today?")
-                    .font(.system(.title2).weight(.bold)).foregroundStyle(Theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
+                verdictLine
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("What are you planning to do today?")
+                        .font(.system(.title2).weight(.bold)).foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Pick what you need done — I'll find each one the cheapest, sunniest slot.")
+                        .font(.subheadline).foregroundStyle(Theme.subtle)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    ForEach(vm.devices) { d in
+                    ForEach(vm.planDevices) { d in
                         TaskCard(device: d, selected: vm.selected[d.id] != nil) { vm.toggle(d) }
                     }
                 }
-                ForEach(vm.devices.filter { vm.selected[$0.id] != nil }) { d in
+                ForEach(vm.planDevices.filter { vm.selected[$0.id] != nil }) { d in
                     taskRow(d)
                 }
                 if let e = vm.errorText { Text(e).font(.footnote).foregroundStyle(Theme.red) }
                 makeButton
+                anomalyCard
             }
             .padding(20)
+        }
+    }
+
+    // Surfaced below "Make my plan" when the home has a live anomaly (e.g. the heat-pump fault).
+    @ViewBuilder private var anomalyCard: some View {
+        if let a = vm.activeAnomaly {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Needs a look", systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption.bold()).foregroundStyle(Theme.red)
+                Text(a.title).font(.system(.headline)).foregroundStyle(Theme.ink)
+                Text(a.detail).font(.subheadline).foregroundStyle(Theme.subtle)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(a.suggestedAction).font(.footnote.weight(.medium)).foregroundStyle(Theme.red)
+            }
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.redSoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.red.opacity(0.35), lineWidth: 1))
         }
     }
 
@@ -79,7 +128,7 @@ struct PlanDayView: View {
                 Text(d.displayName).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.ink)
                 Spacer()
                 if let input = vm.selected[d.id] {
-                    Text(vm.dayHint(for: input.deadline)).font(.caption).foregroundStyle(Theme.subtle)
+                    Text("ready by \(vm.dayHint(for: input.deadline))").font(.caption).foregroundStyle(Theme.subtle)
                 }
                 DatePicker("", selection: Binding(
                     get: { vm.selected[d.id]?.deadline ?? Date() },
@@ -106,7 +155,9 @@ struct PlanDayView: View {
             HStack {
                 if vm.isLoading { ProgressView().tint(.white) }
                 Image(systemName: "wand.and.stars")
-                Text(vm.isLoading ? "Planning\u{2026}" : "Make my plan").font(.headline)
+                Text(vm.isLoading ? "Planning\u{2026}"
+                     : vm.selected.isEmpty ? "Make my plan"
+                     : "Make my plan \u{00B7} \(vm.selected.count)").font(.headline)
             }
             .frame(maxWidth: .infinity).padding(.vertical, 15)
             .background(vm.selected.isEmpty ? Theme.hairline : Theme.green,
@@ -225,17 +276,32 @@ private struct TaskCard: View {
     var body: some View {
         Button(action: onTap) {
             VStack(spacing: 8) {
-                Image(systemName: symbol).font(.system(size: 26)).foregroundStyle(selected ? .white : Theme.green)
+                Image(systemName: symbol).font(.system(size: 26)).foregroundStyle(Theme.green)
                 Text(device.displayName).font(.subheadline.weight(.semibold))
-                    .foregroundStyle(selected ? .white : Theme.ink)
+                    .foregroundStyle(Theme.ink)
                     .multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.8)
             }
             .frame(maxWidth: .infinity).padding(.vertical, 20)
-            .background(selected ? Theme.green : Theme.card,
+            .background(selected ? Theme.greenSoft : Theme.card,
                         in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .strokeBorder(selected ? Theme.green : Theme.hairline, lineWidth: 1))
+            .overlay(alignment: .topTrailing) { selectionMark }
         }.buttonStyle(.plain)
+    }
+
+    // Always-visible selection affordance: filled green check when picked, empty circle otherwise.
+    @ViewBuilder private var selectionMark: some View {
+        Group {
+            if selected {
+                Image(systemName: "checkmark.circle.fill")
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(.white, Theme.green)
+            } else {
+                Image(systemName: "circle").foregroundStyle(Theme.subtle.opacity(0.6))
+            }
+        }
+        .font(.title3).padding(10)
     }
     private var symbol: String {
         switch device.icon {

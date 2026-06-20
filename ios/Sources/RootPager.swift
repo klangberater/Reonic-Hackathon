@@ -3,27 +3,19 @@ import SwiftUI
 /// Two start screens — Home and Plan-my-day — paged horizontally, sharing one clock.
 struct RootPager: View {
     @StateObject private var clock = ClockStore()
+    @State private var page = 0   // 0 = Home, 1 = Plan — start on Home
 
     var body: some View {
-        // A horizontal paging ScrollView (not a `.page` TabView, whose UIPageViewController
-        // swallows the top safe-area inset and slides content under the Dynamic Island).
-        // geo RESPECTS the safe area, so geo.safeAreaInsets read the true device insets and
-        // geo.size is the safe height. The ScrollView itself extends under the bars, so we
-        // re-inset its content by exactly those insets: headers clear the Dynamic Island and
-        // the ask bar clears the home indicator, with each page sized to the safe height.
-        GeometryReader { geo in
-            ScrollView(.horizontal) {
-                HStack(spacing: 0) {
-                    HomeView(clock: clock).frame(width: geo.size.width, height: geo.size.height)
-                    PlanDayView(clock: clock).frame(width: geo.size.width, height: geo.size.height)
-                }
-                .scrollTargetLayout()
-                .padding(.top, geo.safeAreaInsets.top)
-                .padding(.bottom, geo.safeAreaInsets.bottom)
-            }
-            .scrollTargetBehavior(.paging)
-            .scrollIndicators(.hidden)
+        // A paged TabView gives reliable horizontal swiping between the two full-screen pages.
+        // (An earlier horizontal-paging ScrollView broke once both pages became vertical
+        // ScrollViews — the nested scroll views fought over the pan gesture, so swiping stopped
+        // working and the app could land on the wrong page.) TabView respects the safe area, so
+        // each page's header clears the Dynamic Island without manual inset math.
+        TabView(selection: $page) {
+            HomeView(clock: clock).tag(0)
+            PlanDayView(clock: clock).tag(1)
         }
+        .tabViewStyle(.page(indexDisplayMode: .never))
         .background(Theme.bg.ignoresSafeArea())
     }
 }
