@@ -8,13 +8,13 @@ struct HomeView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 18) {
                 header
                 if vm.state != nil {
-                    statusIndicator
-                    verdictHero
-                    moneyCard
+                    anomalyCard
+                    verdictLine
                     devicesSection
+                    moneyCard
                     ForEach(vm.proactiveCards) { proactiveCard($0) }
                 } else if vm.isLoading {
                     ProgressView("Reading your home…").frame(maxWidth: .infinity, minHeight: 280)
@@ -37,23 +37,30 @@ struct HomeView: View {
         .sheet(isPresented: $showChat) { ChatView(clock: vm.clock) }
     }
 
+    // Header: title + greeting (left), health status (right, where the sun was)
     private var header: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Lumen").font(.system(.largeTitle).weight(.bold)).foregroundStyle(Theme.ink)
-                    if let s = vm.state { Text("\(greeting), \(firstName(s.householdName))").font(.subheadline).foregroundStyle(Theme.subtle) }
-                }
-                Spacer()
-                Image(systemName: "sun.max.fill").font(.title2).foregroundStyle(Theme.amber)
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Lumen").font(.system(.largeTitle).weight(.bold)).foregroundStyle(Theme.ink)
+                if let s = vm.state { Text("\(greeting), \(firstName(s.householdName))").font(.subheadline).foregroundStyle(Theme.subtle) }
             }
-            Picker("Clock", selection: Binding(get: { vm.clock }, set: { vm.setClock($0) })) {
-                ForEach(DemoClock.allCases) { Text($0.label).tag($0) }
-            }.pickerStyle(.segmented)
+            Spacer()
+            statusChip
         }
     }
 
-    @ViewBuilder private var statusIndicator: some View {
+    private var statusChip: some View {
+        let alert = vm.activeAnomaly != nil
+        return HStack(spacing: 6) {
+            Circle().fill(alert ? Theme.red : Theme.green).frame(width: 8, height: 8)
+            Text(alert ? "Attention" : "All good").font(.caption.weight(.medium)).foregroundStyle(alert ? Theme.red : Theme.green)
+        }
+        .padding(.horizontal, 11).padding(.vertical, 7)
+        .background(alert ? Theme.redSoft : Theme.greenSoft, in: Capsule())
+    }
+
+    // Detailed anomaly card — only when health is in alert
+    @ViewBuilder private var anomalyCard: some View {
         if let a = vm.activeAnomaly {
             VStack(alignment: .leading, spacing: 8) {
                 Label("Needs a look", systemImage: "exclamationmark.triangle.fill")
@@ -63,30 +70,33 @@ struct HomeView: View {
                 Text(a.suggestedAction).font(.footnote.weight(.medium)).foregroundStyle(Theme.red)
             }
             .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.redSoft, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Theme.red.opacity(0.35), lineWidth: 1))
-        } else {
-            HStack(spacing: 7) {
-                Circle().fill(Theme.green).frame(width: 8, height: 8)
-                Text("All good").font(.subheadline.weight(.medium)).foregroundStyle(Theme.green)
-            }
-            .padding(.horizontal, 12).padding(.vertical, 7)
-            .background(Theme.greenSoft, in: Capsule())
+            .background(Theme.redSoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.red.opacity(0.35), lineWidth: 1))
         }
     }
 
-    private var verdictHero: some View {
+    // Verdict: small, informative line (tap for the live flow)
+    private var verdictLine: some View {
         Button { showFlow = true } label: {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: heroIcon).font(.title2).foregroundStyle(Theme.green)
-                Text(vm.verdict).font(.system(.title2).weight(.semibold)).foregroundStyle(Theme.ink)
+            HStack(spacing: 8) {
+                Image(systemName: heroIcon).font(.footnote).foregroundStyle(Theme.green)
+                Text(vm.verdict).font(.subheadline).foregroundStyle(Theme.subtle)
                     .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 4)
-                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Theme.subtle).padding(.top, 7)
+                Image(systemName: "chevron.right").font(.caption2).foregroundStyle(Theme.subtle)
             }
-            .padding(18).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.greenSoft, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         }.buttonStyle(.plain)
+    }
+
+    // The focal point
+    private var devicesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("What do you want to do?").font(.system(.title2).weight(.bold)).foregroundStyle(Theme.ink)
+            ForEach(vm.devices) { d in
+                Button { selectedDevice = d } label: { DeviceRow(device: d) }.buttonStyle(.plain)
+            }
+        }
+        .padding(.top, 4)
     }
 
     private var moneyCard: some View {
@@ -100,15 +110,6 @@ struct HomeView: View {
             Spacer()
         }
         .padding(16).cardSurface()
-    }
-
-    private var devicesSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("What do you want to run?").font(.system(.headline)).foregroundStyle(Theme.ink)
-            ForEach(vm.devices) { d in
-                Button { selectedDevice = d } label: { DeviceRow(device: d) }.buttonStyle(.plain)
-            }
-        }
     }
 
     private func proactiveCard(_ e: InsightEvent) -> some View {
@@ -135,7 +136,7 @@ struct HomeView: View {
             .font(.callout)
             .padding(.horizontal, 18).padding(.vertical, 14)
             .background(Theme.card, in: Capsule())
-            .overlay(Capsule().strokeBorder(Theme.hairline.opacity(0.6), lineWidth: 0.5))
+            .overlay(Capsule().strokeBorder(Theme.hairline, lineWidth: 0.5))
             .shadow(color: .black.opacity(0.06), radius: 10, y: 4)
             .padding(.horizontal, 20).padding(.bottom, 8)
         }.buttonStyle(.plain)
@@ -168,11 +169,11 @@ struct HomeView: View {
 struct DeviceRow: View {
     let device: Device
     var body: some View {
-        HStack(spacing: 12) {
-            ZStack { Circle().fill(tint.opacity(0.15)).frame(width: 40, height: 40)
-                Image(systemName: symbol).font(.system(size: 18)).foregroundStyle(tint) }
+        HStack(spacing: 14) {
+            ZStack { Circle().fill(tint.opacity(0.15)).frame(width: 44, height: 44)
+                Image(systemName: symbol).font(.system(size: 20)).foregroundStyle(tint) }
             VStack(alignment: .leading, spacing: 2) {
-                Text(device.name).font(.system(.subheadline).weight(.semibold)).foregroundStyle(Theme.ink)
+                Text(device.name).font(.system(.body).weight(.semibold)).foregroundStyle(Theme.ink)
                 if let s = device.scheduled {
                     Text("\(s.window) · \(Theme.sourceLabel(s.source))").font(.caption.weight(.medium)).foregroundStyle(Theme.source(s.source))
                 } else {
@@ -183,7 +184,7 @@ struct DeviceRow: View {
             Image(systemName: device.status == "scheduled" ? "checkmark.circle.fill" : "chevron.right")
                 .font(.footnote.weight(.semibold)).foregroundStyle(device.status == "scheduled" ? Theme.green : Theme.subtle)
         }
-        .padding(14).cardSurface(18)
+        .padding(16).cardSurface(18)
     }
     private var tint: Color {
         switch device.icon { case "car": return Theme.green; case "bowl": return Theme.amber; case "wash": return Theme.grid; default: return Theme.green }
