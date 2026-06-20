@@ -42,3 +42,18 @@ Done — full re-simulation shipped via `scripts/transform_dataset.py`, output i
 
 **Demo readiness:** data now cleanly supports all three moments — glance (summer now-screen),
 decision (midday-cheap dynamic prices), nudge (winter anomaly + bill forecast).
+
+## Backend + server bring-up (done)
+- [x] Minimal Node/TS backend: `/health` + real `/state` (get_current_state) over `data/`, summer/winter clock
+- [x] Server setup copied from Hallo-Theo (getfletcher.ai): GH Actions deploy, systemd unit, nginx snippets
+- [x] Deployed to server: `/opt/reonic/repo`, `reonic-backend.service` on 127.0.0.1:8090
+- [x] nginx `/api/` repointed 8002→8090 (+ auth_basic off), backed up; `/ws` & whatsapp left on theo
+- [x] **Verified public HTTPS end-to-end:** `https://getfletcher.ai/api/health` 200, `/api/state` serves live data
+- [ ] Add `DEPLOY_SSH_KEY` secret to this repo (user) → enables push-to-main auto-deploy
+- [ ] Add a token guard on `/chat` before exposing (it will call Claude = costs money; `/api/` is public)
+- [ ] Retire theo services once ours is fully confirmed (keep as fallback for now)
+
+## Next: MCP server + tool-loop + iOS app
+- [ ] MCP server (7 tools) over data/; backend Claude tool-loop; `/chat` (SSE)
+- [ ] iOS SwiftUI app → `https://getfletcher.ai/api` (NowScreen, ChatView, summer/winter toggle)
+- [ ] Add summer insight set to the transform; make get_insights date-aware
