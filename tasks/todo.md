@@ -71,9 +71,11 @@ Order: backend differentiator first → iOS home/device-sheet UI → /chat → T
 - [x] Endpoints: GET /now(+/state), /household, /money, /devices, /optimize_load, /insights; POST /commit_load, GET /commitments, POST /reset
 - [x] Verified on real data (summer free / winter route-around / winter health alert); live over HTTPS
 
-### iOS (next phase)
-- [ ] Rebuild home screen (verdict, money, device tiles, ask bar) + device sheet (best time, source ribbon, confirm)
-- [ ] Wire to the new endpoints; health loud-state; tile lifecycle
+### iOS (DONE — verified on simulator via Maestro)
+- [x] Home screen: health indicator (quiet/loud), verdict (→ flow detail), money forecast, device tiles, proactive cards, ask bar
+- [x] Device sheet: optimize_load → best time, source ribbon (window outlined), share/cost, rationale, control honesty
+- [x] Tap → Schedule it → commit_load → tile shows "scheduled · free"; FlowDetail on verdict tap
+- [ ] Ask bar is currently a visual placeholder (wires to /chat later)
 
 ### Later
 - [ ] POST /chat: Claude grounded on calls 1–6 as tools (MCP) + token guard
