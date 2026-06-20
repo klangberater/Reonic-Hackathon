@@ -5,6 +5,7 @@ struct HomeView: View {
     @State private var selectedDevice: Device?
     @State private var showFlow = false
     @State private var showChat = false
+    @AppStorage("appearance") private var appearance = "dark"
 
     var body: some View {
         ScrollView {
@@ -45,7 +46,13 @@ struct HomeView: View {
                 if let s = vm.state { Text("\(greeting), \(firstName(s.householdName))").font(.subheadline).foregroundStyle(Theme.subtle) }
             }
             Spacer()
-            statusChip
+            HStack(spacing: 12) {
+                Button { appearance = (appearance == "dark" ? "light" : "dark") } label: {
+                    Image(systemName: "circle.lefthalf.filled").font(.title3).foregroundStyle(Theme.subtle)
+                }
+                .accessibilityLabel("Toggle appearance")
+                statusChip
+            }
         }
     }
 
