@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// Lightweight settings sheet: the demo clock (summer/winter) and appearance.
+/// Bound to the shared `ClockStore` so both Home and Plan-my-day can present it.
 struct SettingsView: View {
-    @ObservedObject var vm: HomeViewModel
+    @ObservedObject var clock: ClockStore
     @AppStorage("appearance") private var appearance = "dark"
     @Environment(\.dismiss) private var dismiss
 
@@ -11,8 +12,8 @@ struct SettingsView: View {
             Form {
                 Section {
                     Picker("Time", selection: Binding(
-                        get: { vm.clock },
-                        set: { vm.setClock($0) }
+                        get: { clock.clock },
+                        set: { clock.setClock($0) }
                     )) {
                         ForEach(DemoClock.allCases) { Text($0.label).tag($0) }
                     }

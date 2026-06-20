@@ -2,7 +2,11 @@ import SwiftUI
 
 struct HomeView: View {
     @StateObject private var vm: HomeViewModel
-    init(clock: ClockStore) { _vm = StateObject(wrappedValue: HomeViewModel(clockStore: clock)) }
+    @ObservedObject private var clockStore: ClockStore
+    init(clock: ClockStore) {
+        _vm = StateObject(wrappedValue: HomeViewModel(clockStore: clock))
+        _clockStore = ObservedObject(wrappedValue: clock)
+    }
     @State private var selectedDevice: Device?
     @State private var showFlow = false
     @State private var showChat = false
@@ -47,7 +51,8 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showFlow) { if let s = vm.state { FlowDetailView(state: s) } }
         .sheet(isPresented: $showChat, onDismiss: { chatSeed = nil }) { ChatView(clock: vm.clock, initialPrompt: chatSeed) }
-        .sheet(isPresented: $showSettings) { SettingsView(vm: vm).presentationDetents([.medium]) }
+        .sheet(isPresented: $showSettings) { SettingsView(clock: clockStore).presentationDetents([.medium]) }
+        .onChange(of: clockStore.clock) { _, _ in Task { await vm.loadAll() } }
     }
 
     // Header: title + greeting (left), health status (right, where the sun was)

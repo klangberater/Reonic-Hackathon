@@ -12,6 +12,7 @@ import SwiftUI
     @Published var mode: PlanMode = .cheapest
     @Published var plan: PlanResult?
     @Published var nudged: [String: String] = [:]              // deviceId → pinned start ISO
+    @Published var insights: Insights?                         // powers the header status chip
     @Published var isLoading = false
     @Published var errorText: String?
 
@@ -20,8 +21,16 @@ import SwiftUI
     init(clockStore: ClockStore) { self.clockStore = clockStore }
     var clock: DemoClock { clockStore.clock }
 
+    /// Same predicate as Home so the status chip reads identically across screens.
+    var activeAnomaly: InsightEvent? {
+        insights?.events.first { $0.active && $0.type == "anomaly" && $0.severity == "high" }
+    }
+
     func loadDevices() async {
-        if let d = try? await api.devices(clock: clock) { devices = d }
+        async let d = try? await api.devices(clock: clock)
+        async let i = try? await api.insights(clock: clock)
+        if let d = await d { devices = d }
+        insights = await i
     }
 
     func toggle(_ device: Device) {
