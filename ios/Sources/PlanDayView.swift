@@ -3,9 +3,12 @@ import SwiftUI
 struct PlanDayView: View {
     @StateObject private var vm: PlanDayViewModel
     @ObservedObject private var clockStore: ClockStore
+    @StateObject private var voice = VoiceRecorder()
     @State private var selectedBlock: String?
     @State private var showSettings = false
     @State private var showFlow = false
+    @State private var typed = ""
+    @FocusState private var typingFocused: Bool
 
     init(clock: ClockStore) {
         _vm = StateObject(wrappedValue: PlanDayViewModel(clockStore: clock))
@@ -73,6 +76,92 @@ struct PlanDayView: View {
         .background(alert ? Theme.redSoft : Theme.greenSoft, in: Capsule())
     }
 
+    // MARK: Voice — the conversational entry (top of the Plan screen)
+
+    private var voiceBar: some View {
+        VStack(spacing: 14) {
+            Button { Task { await toggleRecording() } } label: {
+                ZStack {
+                    Circle().fill(Theme.greenSoft)
+                        .frame(width: 96, height: 96)
+                        .scaleEffect(1 + (voice.isRecording ? voice.level * 0.4 : 0))
+                        .animation(.easeOut(duration: 0.08), value: voice.level)
+                    Circle().fill(voice.isRecording ? Theme.red : Theme.green).frame(width: 72, height: 72)
+                    if vm.voicePhase != .idle {
+                        ProgressView().tint(.white)
+                    } else {
+                        Image(systemName: voice.isRecording ? "stop.fill" : "mic.fill")
+                            .font(.system(size: 28, weight: .bold)).foregroundStyle(.white)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(vm.voicePhase != .idle)
+
+            Text(voicePrompt).font(.subheadline.weight(.medium)).foregroundStyle(Theme.subtle)
+                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+
+            if !vm.transcript.isEmpty {
+                Text("\u{201C}\(vm.transcript)\u{201D}")
+                    .font(.callout.weight(.medium)).foregroundStyle(Theme.ink)
+                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+            }
+
+            HStack(spacing: 8) {
+                TextField("or type it here\u{2026}", text: $typed)
+                    .textFieldStyle(.plain).font(.subheadline).foregroundStyle(Theme.ink)
+                    .focused($typingFocused).submitLabel(.go)
+                    .onSubmit { submitTyped() }
+                Button { submitTyped() } label: {
+                    Image(systemName: "arrow.up.circle.fill").font(.title2)
+                        .foregroundStyle(typed.isEmpty ? Theme.subtle.opacity(0.5) : Theme.green)
+                }
+                .disabled(typed.isEmpty || vm.voicePhase != .idle)
+            }
+            .padding(.horizontal, 12).padding(.vertical, 10)
+            .background(Theme.bg, in: Capsule())
+            .overlay(Capsule().strokeBorder(Theme.hairline, lineWidth: 1))
+
+            if let e = vm.voiceError { Text(e).font(.footnote).foregroundStyle(Theme.red).multilineTextAlignment(.center) }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(20).cardSurface(22)
+    }
+
+    private var voicePrompt: String {
+        if voice.isRecording { return "Listening\u{2026} tap to finish" }
+        switch vm.voicePhase {
+        case .transcribing: return "Understanding what you said\u{2026}"
+        case .planning: return "Laying it under the sun\u{2026}"
+        case .idle: return vm.transcript.isEmpty
+            ? "Tap and tell me your day — \u{201C}charge the car by morning, and a load of washing\u{201D}"
+            : "Tap to plan something else"
+        }
+    }
+
+    private func submitTyped() {
+        let text = typed
+        typed = ""
+        typingFocused = false
+        Task { await vm.planFromText(text) }
+    }
+
+    private func toggleRecording() async {
+        if voice.isRecording {
+            let data = voice.stop()
+            if let data { await vm.planFromVoice(audio: data, mime: voice.mime) }
+            else { vm.voiceError = "I didn't catch any audio — try again, or type it below." }
+            return
+        }
+        guard await voice.requestPermission() else {
+            vm.voiceError = "Microphone access is off — enable it in Settings, or type below."
+            return
+        }
+        vm.voiceError = nil
+        vm.transcript = ""
+        do { try voice.start() } catch { vm.voiceError = error.localizedDescription }
+    }
+
     // MARK: State 1 — pick
 
     private var pickState: some View {
@@ -80,13 +169,11 @@ struct PlanDayView: View {
             VStack(alignment: .leading, spacing: 18) {
                 topBar
                 verdictLine
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("What are you planning to do today?")
-                        .font(.system(.title2).weight(.bold)).foregroundStyle(Theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text("Pick what you need done — I'll find each one the cheapest, sunniest slot.")
-                        .font(.subheadline).foregroundStyle(Theme.subtle)
-                        .fixedSize(horizontal: false, vertical: true)
+                voiceBar
+                HStack(spacing: 10) {
+                    Rectangle().fill(Theme.hairline).frame(height: 1)
+                    Text("or pick manually").font(.caption).foregroundStyle(Theme.subtle).fixedSize()
+                    Rectangle().fill(Theme.hairline).frame(height: 1)
                 }
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ForEach(vm.planDevices) { d in
@@ -185,7 +272,11 @@ struct PlanDayView: View {
                         }
                         .accessibilityLabel("Settings")
                     }
-                    summaryChip(p)
+                    if vm.didReveal {
+                        MoneyReveal(plan: p).id(p.tasks.map(\.window).joined())
+                    } else {
+                        summaryChip(p)
+                    }
                     Picker("Mode", selection: Binding(get: { vm.mode }, set: { vm.setMode($0) })) {
                         ForEach(PlanMode.allCases) { m in Text(m.label).tag(m) }
                     }
@@ -314,4 +405,49 @@ private struct TaskCard: View {
         default: return "powerplug.fill"
         }
     }
+}
+
+/// The savings gut-punch after a conversational plan: the optimised cost rolls up against the
+/// struck-through baseline, with a spring entrance. Numbers come straight from the plan.
+private struct MoneyReveal: View {
+    let plan: PlanResult
+    @State private var shown = false
+    @State private var amount: Double
+
+    init(plan: PlanResult) {
+        self.plan = plan
+        let baseline = plan.tasks.reduce(0) { $0 + $1.gridCostEur } + plan.savedEur
+        _amount = State(initialValue: baseline)
+    }
+
+    private var optimized: Double { plan.tasks.reduce(0) { $0 + $1.gridCostEur } }
+    private var baseline: Double { optimized + plan.savedEur }
+    private var savings: Bool { plan.savedEur >= 0.05 }
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Text(plan.solarSharePct >= 80 && savings ? "All done on sunshine" : "Here's your day, planned")
+                .font(.subheadline.weight(.bold)).foregroundStyle(Theme.green)
+            Text(euro(amount))
+                .font(.system(size: 54, weight: .heavy, design: .rounded)).foregroundStyle(Theme.ink)
+                .contentTransition(.numericText(value: amount))
+                .monospacedDigit()
+            if savings {
+                Text("instead of \(euro(baseline))")
+                    .font(.headline).foregroundStyle(Theme.subtle).strikethrough()
+            }
+            Text("\(Int(plan.solarSharePct))% on your own power \u{00B7} \(String(format: "%.0f", plan.savedCo2Kg)) kg CO\u{2082} saved")
+                .font(.footnote).foregroundStyle(Theme.subtle)
+        }
+        .frame(maxWidth: .infinity).padding(.vertical, 22).padding(.horizontal, 16)
+        .background(Theme.greenSoft, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Theme.green.opacity(0.3), lineWidth: 1))
+        .scaleEffect(shown ? 1 : 0.85).opacity(shown ? 1 : 0)
+        .onAppear {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) { shown = true }
+            withAnimation(.easeOut(duration: 0.9).delay(0.15)) { amount = optimized }
+        }
+    }
+
+    private func euro(_ v: Double) -> String { "\u{20AC}" + String(format: "%.2f", v) }
 }

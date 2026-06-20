@@ -3,6 +3,7 @@ import SwiftUI
 
 @MainActor final class PlanDayViewModel: ObservableObject {
     enum Phase { case pick, plan }
+    enum VoicePhase: Equatable { case idle, transcribing, planning }   // post-recording stages
 
     struct TaskInput { var deadline: Date; var target: Int }   // target used by car only
 
@@ -16,6 +17,13 @@ import SwiftUI
     @Published var state: EnergyState?                         // powers the verdict line (same as Home)
     @Published var isLoading = false
     @Published var errorText: String?
+
+    // Conversational voice/text plan
+    @Published var voicePhase: VoicePhase = .idle
+    @Published var transcript = ""
+    @Published var voiceError: String?
+    @Published var didReveal = false                           // true → planState shows the big money reveal
+    private let player = AudioPlayer.shared
 
     let clockStore: ClockStore
     private let api = APIClient()
@@ -60,6 +68,60 @@ import SwiftUI
     func replan() async { nudged.removeAll(); await runPlan() }
     func setMode(_ m: PlanMode) { mode = m; Task { await runPlan() } }
 
+    // MARK: conversational plan (voice → STT → parse → plan → spoken verdict)
+
+    /// Spoken clip → transcript → plan. Drives the three on-stage status beats.
+    func planFromVoice(audio: Data, mime: String) async {
+        voiceError = nil
+        voicePhase = .transcribing
+        do {
+            transcript = try await api.transcribe(audio: audio, mime: mime)
+            await runVoicePlan(text: transcript)
+        } catch {
+            voicePhase = .idle
+            voiceError = error.localizedDescription
+        }
+    }
+
+    /// Demo-safe fallback: type the sentence, skip the mic.
+    func planFromText(_ typed: String) async {
+        let text = typed.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        transcript = text
+        voiceError = nil
+        await runVoicePlan(text: text)
+    }
+
+    private func runVoicePlan(text: String) async {
+        guard !text.isEmpty else { voicePhase = .idle; voiceError = "I didn't catch that — try again, or type it below."; return }
+        if devices.isEmpty { await loadDevices() }   // need the library to mirror parsed tasks into `selected`
+        voicePhase = .planning
+        do {
+            let result = try await api.planText(text: text, mode: mode, clock: clock)
+            applyParsed(result.tasks)                // keep re-plan / mode-toggle / nudge working
+            plan = result.plan
+            phase = .plan
+            didReveal = true
+            voicePhase = .idle
+            if let data = Data(base64Encoded: result.speechBase64) { player.play(data) }
+        } catch {
+            voicePhase = .idle
+            voiceError = error.localizedDescription
+        }
+    }
+
+    /// Mirror the backend-parsed tasks into `selected` so the existing manual controls keep operating.
+    private func applyParsed(_ tasks: [PlanTextResult.ParsedTask]) {
+        selected.removeAll()
+        nudged.removeAll()
+        for t in tasks {
+            guard let device = devices.first(where: { $0.id == t.device }) else { continue }
+            let deadline = t.deadline.flatMap { Self.formatter.date(from: String($0.prefix(19))) }
+                ?? defaultDeadline(for: device)
+            selected[t.device] = TaskInput(deadline: deadline, target: t.target ?? 80)
+        }
+    }
+
     /// Nudge a task ±1h, pin it, and re-plan the rest around it.
     func nudge(device: String, deltaHours: Int) {
         guard let t = plan?.tasks.first(where: { $0.device == device }) else { return }
@@ -71,6 +133,7 @@ import SwiftUI
 
     private func runPlan() async {
         isLoading = true; errorText = nil
+        didReveal = false   // manual / re-plan path keeps the compact summary chip
         defer { isLoading = false }
         let inputs: [PlanTaskInput] = selected.map { (id, input) in
             PlanTaskInput(

@@ -135,6 +135,19 @@ struct PlanResult: Decodable, Sendable {
     }
 }
 
+// MARK: - /plan_text (conversational voice/text plan)
+struct PlanTextResult: Decodable, Sendable {
+    let tasks: [ParsedTask]
+    let plan: PlanResult
+    let spokenLine: String
+    let speechBase64: String
+    struct ParsedTask: Decodable, Sendable {
+        let device: String
+        let deadline: String?
+        let target: Int?
+    }
+}
+
 enum PlanMode: String, CaseIterable, Identifiable, Sendable {
     case cheapest, greenest, soonest
     var id: String { rawValue }
