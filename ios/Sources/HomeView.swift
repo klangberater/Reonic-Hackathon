@@ -176,6 +176,7 @@ struct DeviceRow: View {
                 Image(systemName: symbol).font(.system(size: 25)).foregroundStyle(tint) }
             VStack(alignment: .leading, spacing: 3) {
                 Text(device.displayName).font(.system(.title3).weight(.semibold)).foregroundStyle(Theme.ink)
+                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 if let s = device.scheduled {
                     Text("\(s.window) · \(Theme.sourceLabel(s.source))").font(.subheadline.weight(.medium)).foregroundStyle(Theme.source(s.source))
                 } else {

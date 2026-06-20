@@ -192,7 +192,8 @@ private struct TaskCard: View {
             VStack(spacing: 8) {
                 Image(systemName: symbol).font(.system(size: 26)).foregroundStyle(selected ? .white : Theme.green)
                 Text(device.displayName).font(.subheadline.weight(.semibold))
-                    .foregroundStyle(selected ? .white : Theme.ink).lineLimit(1)
+                    .foregroundStyle(selected ? .white : Theme.ink)
+                    .multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.8)
             }
             .frame(maxWidth: .infinity).padding(.vertical, 20)
             .background(selected ? Theme.green : Theme.card,
