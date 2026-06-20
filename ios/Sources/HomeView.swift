@@ -10,21 +10,32 @@ struct HomeView: View {
     @State private var showSettings = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            header
+        Group {
             if vm.state != nil {
-                anomalyCard
-                verdictLine
-                devicesSection
-                moneyCard
-                Spacer(minLength: 0)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        header
+                        anomalyCard
+                        verdictLine
+                        devicesSection
+                        moneyCard
+                    }
+                    .padding(20)
+                }
             } else if vm.isLoading {
-                Spacer(); ProgressView("Reading your home…").frame(maxWidth: .infinity); Spacer()
+                VStack(alignment: .leading, spacing: 18) {
+                    header
+                    Spacer(); ProgressView("Reading your home…").frame(maxWidth: .infinity); Spacer()
+                }
+                .padding(20)
             } else if let err = vm.errorText {
-                Spacer(); errorCard(err); Spacer()
+                VStack(alignment: .leading, spacing: 18) {
+                    header
+                    Spacer(); errorCard(err); Spacer()
+                }
+                .padding(20)
             }
         }
-        .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .warmScreen()
         .safeAreaInset(edge: .bottom) { askBar }
