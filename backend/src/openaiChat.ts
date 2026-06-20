@@ -48,6 +48,7 @@ function systemPrompt(householdId: string, nowISO: string, clock: string): strin
         `Rules:`,
         `- ALWAYS call tools for any number, time, price or status. Never invent or estimate figures.`,
         `- Think in terms of energy SOURCE: free (your solar or battery) vs paid (grid). Money in euros.`,
+        `- get_money: when "earning" is true the home is NET POSITIVE this month — a negative projected_total_eur is a CREDIT, not a cost. Say "you're on track to earn about €X", never "costs €X".`,
         `- To answer "when should I run X" or "is now a good time", call optimize_load for that device.`,
         `- Keep answers to 1–3 short sentences, warm and concrete. No JSON, no jargon, no markdown tables.`,
     ].join("\n");
