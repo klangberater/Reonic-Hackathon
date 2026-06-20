@@ -283,15 +283,11 @@ struct PlanDayView: View {
                     }
                     .pickerStyle(.segmented)
 
-                    DayTimeline(curve: p.curve, tasks: p.tasks, selected: selectedBlock) { dev in
-                        selectedBlock = (selectedBlock == dev) ? nil : dev
-                    }
+                    agenda(p)
 
                     if let dev = selectedBlock, let t = p.tasks.first(where: { $0.device == dev }) {
                         nudgeBar(t)
                     }
-
-                    orderedList(p)
 
                     Button { Task { selectedBlock = nil; await vm.replan() } } label: {
                         Label("Re-plan", systemImage: "arrow.triangle.2.circlepath")
@@ -347,40 +343,91 @@ struct PlanDayView: View {
         .padding(14).cardSurface(14)
     }
 
-    private func orderedList(_ p: PlanResult) -> some View {
-        // Chronological by real start datetime (so tonight sorts before tomorrow morning),
-        // grouped under Today / Tomorrow day separators.
+    // MARK: Agenda rail — one card per task, with a plain-language power + cost line.
+    // Chronological by real start datetime (so tonight sorts before tomorrow morning),
+    // grouped under Today / Tomorrow day separators.
+
+    private func agenda(_ p: PlanResult) -> some View {
         let sorted = p.tasks.sorted { $0.start < $1.start }
-        return VStack(alignment: .leading, spacing: 8) {
+        return VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(sorted.enumerated()), id: \.element.device) { idx, t in
-                if idx == 0 || vm.dayLabel(forISO: t.start) != vm.dayLabel(forISO: sorted[idx - 1].start) {
+                let newDay = idx == 0 || vm.dayLabel(forISO: t.start) != vm.dayLabel(forISO: sorted[idx - 1].start)
+                let lastInDay = idx == sorted.count - 1
+                    || vm.dayLabel(forISO: sorted[idx + 1].start) != vm.dayLabel(forISO: t.start)
+                if newDay {
                     Text(vm.dayLabel(forISO: t.start))
                         .font(.caption.weight(.bold)).foregroundStyle(Theme.subtle)
-                        .padding(.top, idx == 0 ? 0 : 8)
+                        .padding(.top, idx == 0 ? 0 : 10).padding(.bottom, 8)
                 }
-                HStack(spacing: 10) {
-                    Text(String(t.window.prefix(5))).font(.subheadline.weight(.bold)).foregroundStyle(Theme.ink)
-                        .frame(width: 52, alignment: .leading)
-                    Image(systemName: symbol(t.icon)).foregroundStyle(Theme.source(t.source))
-                    Text(t.displayName).font(.subheadline).foregroundStyle(Theme.ink)
-                    Spacer()
-                    Text(sourceText(t)).font(.caption).foregroundStyle(Theme.source(t.source))
-                }
-                .padding(.vertical, 4)
+                agendaRow(t, isLast: lastInDay)
             }
         }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading).cardSurface(16)
     }
 
-    /// "free", "free (Battery)", "free (Solar)" — names the own source so a night-time free run reads true.
-    private func sourceText(_ t: PlanResult.PlannedTask) -> String {
-        let base = Theme.sourceLabel(t.source)
-        guard t.source == "free" else { return base }
-        switch t.ownSource {
-        case "battery": return "free (Battery)"
-        case "solar": return "free (Solar)"
-        case "mixed": return "free (Solar + Battery)"
-        default: return base
+    private func agendaRow(_ t: PlanResult.PlannedTask, isLast: Bool) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(String(t.window.prefix(5)))
+                .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.ink)
+                .frame(width: 46, alignment: .trailing).padding(.top, 2)
+
+            // time-rail: a coloured dot, with a line connecting to the next task
+            ZStack(alignment: .top) {
+                if !isLast {
+                    Rectangle().fill(Theme.hairline)
+                        .frame(width: 2).frame(maxHeight: .infinity).padding(.top, 4)
+                }
+                Circle().fill(Theme.source(t.source)).frame(width: 12, height: 12)
+            }
+            .frame(width: 12)
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 9) {
+                    Image(systemName: symbol(t.icon)).foregroundStyle(Theme.ink)
+                    Text(t.displayName).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.ink)
+                    Spacer()
+                    costBadge(t)
+                }
+                HStack(spacing: 7) {
+                    Image(systemName: powerIcon(t)).font(.footnote).foregroundStyle(Theme.source(t.source))
+                    Text(powerLine(t)).font(.footnote).foregroundStyle(Theme.subtle)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(13).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(selectedBlock == t.device ? Theme.green : Color.clear, lineWidth: 1.5))
+            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .onTapGesture { selectedBlock = (selectedBlock == t.device) ? nil : t.device }
+            .padding(.bottom, isLast ? 0 : 14)
+        }
+    }
+
+    private func costBadge(_ t: PlanResult.PlannedTask) -> some View {
+        let text = t.source == "free" ? "Free" : "\u{20AC}\(String(format: "%.2f", t.gridCostEur))"
+        return Text(text)
+            .font(.caption.weight(.medium)).foregroundStyle(Theme.source(t.source))
+            .padding(.horizontal, 9).padding(.vertical, 3)
+            .background(Theme.sourceSoft(t.source), in: Capsule())
+    }
+
+    // Names the own source so a night-time free run reads true (battery, not live solar).
+    private func powerIcon(_ t: PlanResult.PlannedTask) -> String {
+        guard t.source == "free" else { return "powerplug.fill" }
+        return t.ownSource == "battery" ? "battery.100" : "sun.max.fill"
+    }
+
+    private func powerLine(_ t: PlanResult.PlannedTask) -> String {
+        switch t.source {
+        case "free":
+            switch t.ownSource {
+            case "battery": return "Runs on your stored battery — costs nothing"
+            case "solar":   return "Runs on live solar — costs nothing"
+            case "mixed":   return "Runs on your solar + battery — costs nothing"
+            default:        return "Runs on your own power — costs nothing"
+            }
+        case "partial": return "Part your own power, part grid"
+        default:        return "Drawn from the grid"
         }
     }
 
