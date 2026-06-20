@@ -1,0 +1,83 @@
+[
+  {
+    "household_id": "HH-1001",
+    "type": "anomaly",
+    "severity": "high",
+    "period": "2026-01-12..2026-01-19",
+    "title": "Heat pump consumed ~60% more than usual",
+    "detail": "Sustained elevated heat-pump electricity use over 8 days, beyond what outdoor temperature explains. Possible defrost fault, low refrigerant, or thermostat misconfiguration.",
+    "suggested_action": "Check heat pump settings / book a service inspection."
+  },
+  {
+    "household_id": "HH-1001",
+    "type": "nudge",
+    "severity": "info",
+    "period": "recurring",
+    "title": "Cheapest power is around 13:00",
+    "detail": "Over the year the lowest average price was at 13:00 (~EUR 0.324/kWh). Shift flexible loads (EV, dishwasher, laundry) into this window.",
+    "suggested_action": "Schedule EV charging and appliances overnight."
+  },
+  {
+    "household_id": "HH-1001",
+    "type": "insight",
+    "severity": "info",
+    "period": "2026-01",
+    "title": "Highest bill in 2026-01",
+    "detail": "2026-01 cost EUR 666.99 vs your low of EUR -11.58 in 2026-06, driven by heating demand and lower solar.",
+    "suggested_action": "Pre-heat during cheap/sunny hours; review winter heating schedule."
+  },
+  {
+    "household_id": "HH-1002",
+    "type": "nudge",
+    "severity": "info",
+    "period": "recurring",
+    "title": "Cheapest power is around 13:00",
+    "detail": "Over the year the lowest average price was at 13:00 (~EUR 0.324/kWh). Shift flexible loads (EV, dishwasher, laundry) into this window.",
+    "suggested_action": "Schedule EV charging and appliances overnight."
+  },
+  {
+    "household_id": "HH-1002",
+    "type": "insight",
+    "severity": "info",
+    "period": "2026-01",
+    "title": "Highest bill in 2026-01",
+    "detail": "2026-01 cost EUR 453.45 vs your low of EUR -37.78 in 2026-07, driven by heating demand and lower solar.",
+    "suggested_action": "Pre-heat during cheap/sunny hours; review winter heating schedule."
+  },
+  {
+    "household_id": "HH-1003",
+    "type": "nudge",
+    "severity": "info",
+    "period": "recurring",
+    "title": "Cheapest power is around 00:00",
+    "detail": "Over the year the lowest average price was at 00:00 (~EUR 0.349/kWh). Shift flexible loads (EV, dishwasher, laundry) into this window.",
+    "suggested_action": "Schedule EV charging and appliances overnight."
+  },
+  {
+    "household_id": "HH-1003",
+    "type": "insight",
+    "severity": "info",
+    "period": "2026-01",
+    "title": "Highest bill in 2026-01",
+    "detail": "2026-01 cost EUR 516.07 vs your low of EUR -60.36 in 2026-07, driven by heating demand and lower solar.",
+    "suggested_action": "Pre-heat during cheap/sunny hours; review winter heating schedule."
+  },
+  {
+    "household_id": "HH-1004",
+    "type": "nudge",
+    "severity": "info",
+    "period": "recurring",
+    "title": "Cheapest power is around 13:00",
+    "detail": "Over the year the lowest average price was at 13:00 (~EUR 0.324/kWh). Shift flexible loads (EV, dishwasher, laundry) into this window.",
+    "suggested_action": "Schedule EV charging and appliances overnight."
+  },
+  {
+    "household_id": "HH-1004",
+    "type": "insight",
+    "severity": "info",
+    "period": "2026-12",
+    "title": "Highest bill in 2026-12",
+    "detail": "2026-12 cost EUR 94.36 vs your low of EUR -1.48 in 2026-07, driven by heating demand and lower solar.",
+    "suggested_action": "Pre-heat during cheap/sunny hours; review winter heating schedule."
+  }
+]
