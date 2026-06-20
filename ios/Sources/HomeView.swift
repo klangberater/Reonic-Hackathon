@@ -96,7 +96,7 @@ struct HomeView: View {
 
     // The focal point
     private var devicesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             Text("What do you want to do?").font(.system(.title2).weight(.bold)).foregroundStyle(Theme.ink)
             ForEach(vm.devices) { d in
                 Button { selectedDevice = d } label: { DeviceRow(device: d) }.buttonStyle(.plain)
@@ -106,16 +106,12 @@ struct HomeView: View {
     }
 
     private var moneyCard: some View {
-        HStack(spacing: 14) {
-            ZStack { Circle().fill(Theme.amberSoft).frame(width: 44, height: 44)
-                Image(systemName: "eurosign").font(.headline).foregroundStyle(Theme.amber) }
-            VStack(alignment: .leading, spacing: 2) {
-                Text("forecast · this month").font(.caption).foregroundStyle(Theme.subtle)
-                Text(vm.moneyLine).font(.system(.title3).weight(.bold)).foregroundStyle(Theme.ink)
-            }
+        HStack(spacing: 9) {
+            Image(systemName: "eurosign.circle.fill").font(.subheadline).foregroundStyle(Theme.amber)
+            Text(vm.moneyLine).font(.footnote.weight(.medium)).foregroundStyle(Theme.subtle)
             Spacer()
         }
-        .padding(16).cardSurface()
+        .padding(.horizontal, 14).padding(.vertical, 10).cardSurface(14)
     }
 
     private var askBar: some View {
@@ -162,22 +158,22 @@ struct HomeView: View {
 struct DeviceRow: View {
     let device: Device
     var body: some View {
-        HStack(spacing: 14) {
-            ZStack { Circle().fill(tint.opacity(0.15)).frame(width: 44, height: 44)
-                Image(systemName: symbol).font(.system(size: 20)).foregroundStyle(tint) }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(device.name).font(.system(.body).weight(.semibold)).foregroundStyle(Theme.ink)
+        HStack(spacing: 16) {
+            ZStack { Circle().fill(tint.opacity(0.15)).frame(width: 54, height: 54)
+                Image(systemName: symbol).font(.system(size: 25)).foregroundStyle(tint) }
+            VStack(alignment: .leading, spacing: 3) {
+                Text(device.name).font(.system(.title3).weight(.semibold)).foregroundStyle(Theme.ink)
                 if let s = device.scheduled {
-                    Text("\(s.window) · \(Theme.sourceLabel(s.source))").font(.caption.weight(.medium)).foregroundStyle(Theme.source(s.source))
+                    Text("\(s.window) · \(Theme.sourceLabel(s.source))").font(.subheadline.weight(.medium)).foregroundStyle(Theme.source(s.source))
                 } else {
-                    Text("tap to plan").font(.caption).foregroundStyle(Theme.subtle)
+                    Text("tap to plan").font(.subheadline).foregroundStyle(Theme.subtle)
                 }
             }
             Spacer()
             Image(systemName: device.status == "scheduled" ? "checkmark.circle.fill" : "chevron.right")
-                .font(.footnote.weight(.semibold)).foregroundStyle(device.status == "scheduled" ? Theme.green : Theme.subtle)
+                .font(.body.weight(.semibold)).foregroundStyle(device.status == "scheduled" ? Theme.green : Theme.subtle)
         }
-        .padding(16).cardSurface(18)
+        .padding(.horizontal, 18).padding(.vertical, 18).cardSurface(20)
     }
     private var tint: Color {
         switch device.icon { case "car": return Theme.green; case "bowl": return Theme.amber; case "wash": return Theme.grid; default: return Theme.green }
