@@ -112,3 +112,31 @@ enum Source: String {
     case free, partial, paid
     init(_ s: String) { self = Source(rawValue: s) ?? .paid }
 }
+
+// MARK: - /plan_day
+struct PlanResult: Decodable, Sendable {
+    let mode: String
+    let solarSharePct: Double
+    let savedEur: Double
+    let savedCo2Kg: Double
+    let curve: [CurvePoint]
+    let tasks: [PlannedTask]
+
+    struct CurvePoint: Decodable, Sendable, Identifiable {
+        let hour: Int; let solarKw: Double
+        var id: Int { hour }
+    }
+    struct PlannedTask: Decodable, Sendable, Identifiable {
+        let device: String; let name: String; let icon: String
+        let start: String; let startHour: Int; let window: String
+        let durationHours: Double; let source: String
+        let ownSharePct: Double; let gridCostEur: Double; let controllable: Bool
+        var id: String { device }
+    }
+}
+
+enum PlanMode: String, CaseIterable, Identifiable, Sendable {
+    case cheapest, greenest, soonest
+    var id: String { rawValue }
+    var label: String { self == .cheapest ? "Cheapest" : self == .greenest ? "Greenest" : "Soonest" }
+}

@@ -5,6 +5,13 @@ struct APIError: LocalizedError {
     var errorDescription: String? { message }
 }
 
+struct PlanTaskInput: Sendable {
+    let device: String
+    let deadline: String?
+    let target: Int?
+    let start: String?
+}
+
 struct APIClient: Sendable {
     var baseURL: String = Config.baseURL
 
@@ -23,6 +30,19 @@ struct APIClient: Sendable {
     }
     func optimize(device: String, household: String = Config.defaultHousehold, clock: DemoClock) async throws -> OptimizeResult {
         try await get("/optimize_load", household: household, clock: clock, extra: [.init(name: "device", value: device)])
+    }
+    func planDay(tasks: [PlanTaskInput], mode: PlanMode, household: String = Config.defaultHousehold, clock: DemoClock) async throws -> PlanResult {
+        let body: [String: Any] = [
+            "household": household, "clock": clock.rawValue, "mode": mode.rawValue,
+            "tasks": tasks.map { t -> [String: Any] in
+                var o: [String: Any] = ["device": t.device]
+                if let d = t.deadline { o["deadline"] = d }
+                if let g = t.target { o["target"] = g }
+                if let s = t.start { o["start"] = s }
+                return o
+            },
+        ]
+        return try await postJSON("/plan_day", body: body)
     }
 
     // MARK: writes
