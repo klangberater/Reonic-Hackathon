@@ -274,6 +274,7 @@ struct PlanDayView: View {
                     }
                     if vm.didReveal {
                         MoneyReveal(plan: p).id(p.tasks.map(\.window).joined())
+                        if !vm.planNotes.isEmpty { noteChips }
                     } else {
                         summaryChip(p)
                     }
@@ -303,6 +304,23 @@ struct PlanDayView: View {
             }
         } else {
             ProgressView("Planning\u{2026}").frame(maxWidth: .infinity, minHeight: 300)
+        }
+    }
+
+    // Acknowledged context the planner heard but didn't schedule (e.g. "Guests at 8pm").
+    private var noteChips: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(vm.planNotes, id: \.self) { note in
+                HStack(spacing: 8) {
+                    Image(systemName: "person.2.fill").font(.caption).foregroundStyle(Theme.subtle)
+                    Text("Noted: \(note)").font(.subheadline).foregroundStyle(Theme.ink)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Theme.card, in: Capsule())
+                .overlay(Capsule().strokeBorder(Theme.hairline, lineWidth: 1))
+            }
         }
     }
 

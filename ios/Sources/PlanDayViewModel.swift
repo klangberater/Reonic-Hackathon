@@ -23,6 +23,7 @@ import SwiftUI
     @Published var transcript = ""
     @Published var voiceError: String?
     @Published var didReveal = false                           // true → planState shows the big money reveal
+    @Published var planNotes: [String] = []                    // acknowledged context (e.g. "Guests at 8pm")
     private let player = AudioPlayer.shared
 
     let clockStore: ClockStore
@@ -99,6 +100,7 @@ import SwiftUI
         do {
             let result = try await api.planText(text: text, mode: mode, clock: clock)
             applyParsed(result.tasks)                // keep re-plan / mode-toggle / nudge working
+            planNotes = result.notes ?? []
             plan = result.plan
             phase = .plan
             didReveal = true
@@ -134,6 +136,7 @@ import SwiftUI
     private func runPlan() async {
         isLoading = true; errorText = nil
         didReveal = false   // manual / re-plan path keeps the compact summary chip
+        planNotes = []
         defer { isLoading = false }
         let inputs: [PlanTaskInput] = selected.map { (id, input) in
             PlanTaskInput(

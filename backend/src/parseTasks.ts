@@ -26,8 +26,13 @@ const SCHEMA = {
                 required: ["device", "deadline", "target"],
             },
         },
+        notes: {
+            type: "array",
+            description: "Short acknowledgements of context that is NOT a device task (e.g. guests arriving).",
+            items: { type: "string" },
+        },
     },
-    required: ["tasks"],
+    required: ["tasks", "notes"],
 };
 
 function systemPrompt(householdId: string, nowISO: string): string {
@@ -45,12 +50,16 @@ function systemPrompt(householdId: string, nowISO: string): string {
             '"tomorrow morning" → next day 07:00; "by 8" / "before tonight" → today (or next day if already past). ' +
             "Use an empty string when no deadline is implied.",
         "- target: for the car, the charge target % (default 80 if unspecified). Use 0 for non-car devices.",
-        "- Context with no device (e.g. \"people coming over at 8\") produces NO task; it may still inform a deadline.",
+        '- Context that names NO device (e.g. "people coming over at 8", "it\'s a busy day") produces NO task. ' +
+            'Instead add a SHORT note capturing it to `notes` (e.g. "Guests arriving at 8pm") so we can show we understood. ' +
+            "A few words each, at most 3 notes; empty array when there's nothing noteworthy.",
         "- Never output a device id that is not in the list above. If nothing maps, return an empty tasks array.",
     ].join("\n");
 }
 
-export async function parseTasks(householdId: string, nowISO: string, text: string): Promise<PlanTaskInput[]> {
+export interface ParsedPlan { tasks: PlanTaskInput[]; notes: string[] }
+
+export async function parseTasks(householdId: string, nowISO: string, text: string): Promise<ParsedPlan> {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw Object.assign(new Error("parser not configured (no OPENAI_API_KEY)"), { code: 503 });
 
@@ -76,7 +85,7 @@ export async function parseTasks(householdId: string, nowISO: string, text: stri
 
     const valid = new Set(devicesFor(householdId).map((d) => d.id));
     const raw: any[] = Array.isArray(parsed?.tasks) ? parsed.tasks : [];
-    return raw
+    const tasks = raw
         .filter((t) => valid.has(t?.device))
         .map((t): PlanTaskInput => {
             const out: PlanTaskInput = { device: String(t.device) };
@@ -84,6 +93,11 @@ export async function parseTasks(householdId: string, nowISO: string, text: stri
             if (t.device === "ev" && Number(t.target) >= 50) out.target = Math.min(100, Number(t.target));
             return out;
         });
+    const notes: string[] = (Array.isArray(parsed?.notes) ? parsed.notes : [])
+        .filter((n: any) => typeof n === "string" && n.trim())
+        .map((n: string) => n.trim())
+        .slice(0, 3);
+    return { tasks, notes };
 }
 
 function safeParse(s: string): any { try { return JSON.parse(s || "{}"); } catch { return {}; } }

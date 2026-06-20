@@ -148,12 +148,12 @@ app.post("/plan_text", async (req, res) => {
         const now = resolveNow(clk(req), req.body.at);
         const mode = (req.body.mode as string) || "cheapest";
         if (!["cheapest", "greenest", "soonest"].includes(mode)) return res.status(400).json({ error: "bad mode" });
-        const tasks = await parseTasks(id, now, text);
+        const { tasks, notes } = await parseTasks(id, now, text);
         if (!tasks.length) return res.status(422).json({ error: "I couldn't spot anything to schedule there — try naming the car, washing, dishes or dryer." });
         const plan = planDay(id, now, mode as any, tasks);
         const spokenLine = verdictLine(plan);
         const speechBase64 = (await synthesize(spokenLine)).toString("base64");
-        res.json({ tasks, plan, spokenLine, speechBase64 });
+        res.json({ tasks, notes, plan, spokenLine, speechBase64 });
     } catch (e: any) {
         res.status(e.code === 503 ? 503 : 500).json({ error: String(e.message || e) });
     }

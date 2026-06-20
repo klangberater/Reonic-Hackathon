@@ -144,6 +144,7 @@ struct PlanResult: Decodable, Sendable {
 // MARK: - /plan_text (conversational voice/text plan)
 struct PlanTextResult: Decodable, Sendable {
     let tasks: [ParsedTask]
+    let notes: [String]?
     let plan: PlanResult
     let spokenLine: String
     let speechBase64: String
