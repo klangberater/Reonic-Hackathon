@@ -5,6 +5,7 @@ struct PlanDayView: View {
     @ObservedObject private var clockStore: ClockStore
     @State private var selectedBlock: String?
     @State private var showSettings = false
+    @State private var showFlow = false
 
     init(clock: ClockStore) {
         _vm = StateObject(wrappedValue: PlanDayViewModel(clockStore: clock))
@@ -23,6 +24,30 @@ struct PlanDayView: View {
         .task { if vm.devices.isEmpty { await vm.loadDevices() } }
         .onChange(of: clockStore.clock) { _, _ in Task { await vm.loadDevices() } }
         .sheet(isPresented: $showSettings) { SettingsView(clock: clockStore).presentationDetents([.medium]) }
+        .sheet(isPresented: $showFlow) { if let s = vm.state { FlowDetailView(state: s) } }
+    }
+
+    // Verdict: small, informative line (tap for the live flow) — same as Home.
+    @ViewBuilder private var verdictLine: some View {
+        if vm.state != nil {
+            Button { showFlow = true } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: heroIcon).font(.footnote).foregroundStyle(Theme.green)
+                    Text(vm.verdict).font(.subheadline).foregroundStyle(Theme.subtle)
+                        .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.right").font(.caption2).foregroundStyle(Theme.subtle)
+                }
+            }.buttonStyle(.plain)
+        }
+    }
+
+    private var heroIcon: String {
+        switch vm.state?.status {
+        case "exporting_surplus": return "sun.max.fill"
+        case "drawing_grid": return "bolt.fill"
+        default: return "leaf.fill"
+        }
     }
 
     // Settings + a quick health overview, mirroring Home's header. Sits atop each state.
@@ -54,6 +79,7 @@ struct PlanDayView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 topBar
+                verdictLine
                 Text("What do you want to do today?")
                     .font(.system(.title2).weight(.bold)).foregroundStyle(Theme.ink)
                     .fixedSize(horizontal: false, vertical: true)

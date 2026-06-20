@@ -13,6 +13,7 @@ import SwiftUI
     @Published var plan: PlanResult?
     @Published var nudged: [String: String] = [:]              // deviceId → pinned start ISO
     @Published var insights: Insights?                         // powers the header status chip
+    @Published var state: EnergyState?                         // powers the verdict line (same as Home)
     @Published var isLoading = false
     @Published var errorText: String?
 
@@ -26,11 +27,24 @@ import SwiftUI
         insights?.events.first { $0.active && $0.type == "anomaly" && $0.severity == "high" }
     }
 
+    /// Same wording as Home's verdict line.
+    var verdict: String {
+        guard let s = state else { return "" }
+        switch s.status {
+        case "exporting_surplus": return "Running on free solar — sending \(fmt(s.grid.flowKw)) kW to the grid."
+        case "drawing_grid": return "Pulling \(fmt(-s.grid.flowKw)) kW from the grid right now."
+        default: return "Running on your own power right now."
+        }
+    }
+    private func fmt(_ v: Double) -> String { String(format: "%.1f", abs(v)) }
+
     func loadDevices() async {
         async let d = try? await api.devices(clock: clock)
         async let i = try? await api.insights(clock: clock)
+        async let s = try? await api.state(clock: clock)
         if let d = await d { devices = d }
         insights = await i
+        state = await s
     }
 
     func toggle(_ device: Device) {
