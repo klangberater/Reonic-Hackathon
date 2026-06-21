@@ -326,10 +326,16 @@ struct PlanDayView: View {
     }
 
     private func summaryChip(_ p: PlanResult) -> some View {
-        HStack(spacing: 6) {
+        // "saves €X" only when there's a meaningful saving vs. the naive baseline; otherwise a
+        // tight deadline left no better window, so lead with the always-true own-power + today's cost.
+        let gridCost = p.tasks.reduce(0) { $0 + $1.gridCostEur }
+        let line = p.savedEur >= 0.05
+            ? "\(Int(p.solarSharePct))% solar \u{00B7} saves \u{20AC}\(String(format: "%.2f", p.savedEur)) / \(String(format: "%.0f", p.savedCo2Kg)) kg CO\u{2082} today"
+            : "\(Int(p.solarSharePct))% on your own power \u{00B7} \u{20AC}\(String(format: "%.2f", gridCost)) from the grid today"
+        return HStack(spacing: 6) {
             Image(systemName: "leaf.fill")
-            Text("\(Int(p.solarSharePct))% solar \u{00B7} saves \u{20AC}\(String(format: "%.2f", p.savedEur)) / \(String(format: "%.0f", p.savedCo2Kg)) kg CO\u{2082} today")
-                .font(.subheadline.weight(.semibold))
+            Text(line).font(.subheadline.weight(.semibold))
+                .fixedSize(horizontal: false, vertical: true)
         }
         .foregroundStyle(Theme.green)
         .padding(.horizontal, 14).padding(.vertical, 10)
@@ -526,7 +532,9 @@ private struct MoneyReveal: View {
                 Text("instead of \(euro(baseline))")
                     .font(.headline).foregroundStyle(Theme.subtle).strikethrough()
             }
-            Text("\(Int(plan.solarSharePct))% on your own power \u{00B7} \(String(format: "%.0f", plan.savedCo2Kg)) kg CO\u{2082} saved")
+            Text(savings
+                 ? "\(Int(plan.solarSharePct))% on your own power \u{00B7} \(String(format: "%.0f", plan.savedCo2Kg)) kg CO\u{2082} saved"
+                 : "\(Int(plan.solarSharePct))% on your own power")
                 .font(.footnote).foregroundStyle(Theme.subtle)
         }
         .frame(maxWidth: .infinity).padding(.vertical, 22).padding(.horizontal, 16)
