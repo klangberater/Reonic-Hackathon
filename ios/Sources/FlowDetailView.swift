@@ -5,6 +5,7 @@ struct FlowDetailView: View {
     let state: EnergyState
     var money: Money? = nil
     @Environment(\.dismiss) private var dismiss
+    @State private var detent: PresentationDetent = .large   // open expanded so all content shows
 
     var body: some View {
         ScrollView {
@@ -41,7 +42,7 @@ struct FlowDetailView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .warmScreen()
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.medium, .large], selection: $detent)
     }
 
     // The month-end forecast — carried over from the (now hidden) Home screen.
