@@ -1,5 +1,12 @@
 import SwiftUI
 
+/// Identifiable seed for the assistant sheet — drives `.sheet(item:)` so the seeded prompt is
+/// always passed at presentation (an isPresented+separate-state pair can race and arrive nil).
+struct ChatSeed: Identifiable {
+    let id = UUID()
+    let prompt: String
+}
+
 struct PlanDayView: View {
     @StateObject private var vm: PlanDayViewModel
     @ObservedObject private var clockStore: ClockStore
@@ -7,8 +14,7 @@ struct PlanDayView: View {
     @State private var selectedBlock: String?
     @State private var showSettings = false
     @State private var showFlow = false
-    @State private var showChat = false
-    @State private var chatSeed: String?
+    @State private var chatSeed: ChatSeed?
     @State private var typed = ""
     @FocusState private var typingFocused: Bool
 
@@ -30,7 +36,7 @@ struct PlanDayView: View {
         .onChange(of: clockStore.clock) { _, _ in Task { await vm.loadDevices() } }
         .sheet(isPresented: $showSettings) { SettingsView(clock: clockStore).presentationDetents([.medium]) }
         .sheet(isPresented: $showFlow) { if let s = vm.state { FlowDetailView(state: s, money: vm.money) } }
-        .sheet(isPresented: $showChat, onDismiss: { chatSeed = nil }) { ChatView(clock: vm.clock, initialPrompt: chatSeed) }
+        .sheet(item: $chatSeed) { seed in ChatView(clock: vm.clock, initialPrompt: seed.prompt) }
     }
 
     // Verdict: small, informative line (tap for the live flow) — same as Home.
@@ -91,10 +97,9 @@ struct PlanDayView: View {
     /// Open the assistant seeded with the causal "why" for the active anomaly.
     private func askAboutAnomaly() {
         guard let a = vm.activeAnomaly else { return }
-        chatSeed = a.subject == "solar"
+        chatSeed = ChatSeed(prompt: a.subject == "solar"
             ? "Why is my solar generating less than it should?"
-            : "Why is my heat pump using so much?"
-        showChat = true
+            : "Why is my heat pump using so much?")
     }
 
     // MARK: Voice — the conversational entry (top of the Plan screen)
