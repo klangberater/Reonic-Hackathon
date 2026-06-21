@@ -48,34 +48,9 @@ Judges remember moments, not features. The app opens on the **Plan-my-day screen
 
 ---
 
-## Video script — the 2-minute voiceover
+## Video script
 
-Three acts: **Intro 25s · Demo 60s · Tech 33s** ≈ 1:58, ~2s of air. VO in quotes; cut Beat 2 to one line if tight.
-
-### Act 1 — Intro (0:00–0:25) · ~65 words
-*On screen: the app open (or a 2-sec title card → app).*
-> "Every energy app today shows you a wall of charts and quietly makes *you* the analyst. **Lumen** flips that — it does the analysis and just tells you what to do. It's an assistant for homes with solar, a battery, a heat pump, an EV. One calm screen you *talk to*: tell it your day, it plans your energy around your own sunshine — and it catches problems before they hit your bill."
-
-### Act 2 — Product demo (0:25–1:25)
-**Beat 1 · voice plan (0:25–0:52)** — *tap mic, say ONLY the command, stop, then stay quiet and let the spoken reply land.*
-> (into the app) "Charge the car by tomorrow morning, and run a load of washing."
-> *[app speaks back]* "Planned for the day — €2.72 instead of €13.20, 69% on your own power."
-> (after it finishes) "It understood me, scheduled both around the solar peak, and told me the cost — real euros, not vibes."
-
-**Beat 2 · the plan (0:52–1:02)**
-> "Washing on free midday solar, the car across the sunniest hours. Green means free — your own power. The whole day's scheduled for me."
-
-**Beat 3 · the twist (1:02–1:25)** — *tap the red "Attention" chip.*
-> "But it said sixty-nine percent — not a hundred. Why?" *[tap → assistant opens with the facts]*
-> "It's a bright day, but my panels are generating fifty-five percent below normal — likely **dirt or shading**. It caught the fault, explained it in plain words, and that's *why* today couldn't run all-solar."
-
-### Act 3 — Technical complexity (1:25–2:00) · ~85 words
-*On screen: the architecture frame — `presentation/architecture.png` (landscape 2080×1200) or `architecture-portrait.png` (1080×1920) for a phone-aspect cut. Green = deterministic tools that own the numbers; blue = the model (words only). SVG sources alongside if you want to tweak.*
-> "Under the hood, one principle: **tools do the math, the model does the words** — a TypeScript server owns every number, so nothing's hallucinated and the figures are repeatable. The hard part is the **fault detection**: from your home's *own* history it learns what the panels — or the heat pump — should do at each temperature, then flags a sustained break from that. That's how it tells a cloudy day apart from a failing one. A **source-first scheduler** then routes each load around the ones already committed — all on a **physically-simulated year of data whose energy balance closes to zero**. The voice loop on top is real, end-to-end."
-
-*Runs ~35s. To hit a hard 30s, drop "That's how it tells a cloudy day apart from a failing one" (the demo already showed it).*
-
-**Directing notes:** (1) Don't talk over the app's spoken reply in Beat 1 — leave a 2-sec gap; that TTS *is* the wow. (2) Mic = your Mac mic in the Simulator, so say only the command while it listens, then narrate after you tap stop (or type the command and narrate freely — the reply still speaks).
+**The read-aloud script is its own file: [`presentation/video-script.md`](presentation/video-script.md)** — bold lines to speak, italic stage cues, top to bottom. Structure: Intro 25s · Demo 60s · Tech 33s ≈ 1:58. The runsheet below is the *data* it's keyed to.
 
 ---
 
