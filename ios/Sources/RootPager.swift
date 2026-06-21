@@ -1,22 +1,13 @@
 import SwiftUI
 
-/// Two start screens — Home and Plan-my-day — paged horizontally, sharing one clock.
+/// The app's single start screen: Plan-my-day. (The Home energy-glance screen still lives in
+/// HomeView.swift but is intentionally not shown — reachable again by paging it back in here.)
 struct RootPager: View {
     @StateObject private var clock = ClockStore()
-    @State private var page = 0   // 0 = Home, 1 = Plan — start on Home
 
     var body: some View {
-        // A paged TabView gives reliable horizontal swiping between the two full-screen pages.
-        // (An earlier horizontal-paging ScrollView broke once both pages became vertical
-        // ScrollViews — the nested scroll views fought over the pan gesture, so swiping stopped
-        // working and the app could land on the wrong page.) TabView respects the safe area, so
-        // each page's header clears the Dynamic Island without manual inset math.
-        TabView(selection: $page) {
-            HomeView(clock: clock).tag(0)
-            PlanDayView(clock: clock).tag(1)
-        }
-        .tabViewStyle(.page(indexDisplayMode: .never))
-        .background(Theme.bg.ignoresSafeArea())
+        PlanDayView(clock: clock)
+            .background(Theme.bg.ignoresSafeArea())
     }
 }
 

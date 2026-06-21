@@ -58,7 +58,6 @@ struct PlanDayView: View {
         HStack(spacing: 12) {
             statusChip
             Spacer()
-            PagerDots(current: 1)
             Button { showSettings = true } label: {
                 Image(systemName: "gearshape").font(.title3).foregroundStyle(Theme.subtle)
             }
@@ -266,7 +265,6 @@ struct PlanDayView: View {
                         }.buttonStyle(.plain).foregroundStyle(Theme.subtle)
                         Spacer()
                         statusChip
-                        PagerDots(current: 1)
                         Button { showSettings = true } label: {
                             Image(systemName: "gearshape").font(.title3).foregroundStyle(Theme.subtle)
                         }
