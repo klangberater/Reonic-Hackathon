@@ -128,11 +128,19 @@ struct PlanDayView: View {
                     .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             }
 
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 TextField("or type it here\u{2026}", text: $typed)
                     .textFieldStyle(.plain).font(.subheadline).foregroundStyle(Theme.ink)
                     .focused($typingFocused).submitLabel(.go)
                     .onSubmit { submitTyped() }
+                // One-tap "recommend my day" — auto-plan the heavy appliances at their best times.
+                Button { Task { await vm.recommendDay() } } label: {
+                    if vm.isLoading { ProgressView().tint(Theme.green) }
+                    else { Image(systemName: "sparkles").font(.title3).foregroundStyle(Theme.green) }
+                }
+                .buttonStyle(.plain)
+                .disabled(vm.isLoading || vm.voicePhase != .idle)
+                .accessibilityLabel("Recommend my day")
                 Button { submitTyped() } label: {
                     Image(systemName: "arrow.up.circle.fill").font(.title2)
                         .foregroundStyle(typed.isEmpty ? Theme.subtle.opacity(0.5) : Theme.green)
@@ -147,30 +155,6 @@ struct PlanDayView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(20).cardSurface(22)
-    }
-
-    // One-tap alternative to picking tasks: preview the whole day's best run/charge times.
-    private var recommendButton: some View {
-        Button { Task { await vm.recommendDay() } } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "wand.and.stars").font(.title3)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Recommend my day").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.green)
-                    Text("Best times to charge & run heavy appliances")
-                        .font(.caption).foregroundStyle(Theme.subtle)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 4)
-                if vm.isLoading { ProgressView().tint(Theme.green) }
-                else { Image(systemName: "chevron.right").font(.footnote).foregroundStyle(Theme.subtle) }
-            }
-            .foregroundStyle(Theme.green)
-            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.greenSoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.green.opacity(0.25), lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-        .disabled(vm.isLoading)
     }
 
     private var voicePrompt: String {
@@ -215,7 +199,6 @@ struct PlanDayView: View {
                 topBar
                 verdictLine
                 voiceBar
-                recommendButton
                 HStack(spacing: 10) {
                     Rectangle().fill(Theme.hairline).frame(height: 1)
                     Text("or pick manually").font(.caption).foregroundStyle(Theme.subtle).fixedSize()
