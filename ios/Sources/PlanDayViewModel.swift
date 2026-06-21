@@ -72,6 +72,16 @@ import SwiftUI
     func replan() async { nudged.removeAll(); await runPlan() }
     func setMode(_ m: PlanMode) { mode = m; Task { await runPlan() } }
 
+    /// One-tap "preview my day": plan every heavy appliance the home has at its default deadline,
+    /// so the agenda shows the best times to charge / run them — no manual picking needed.
+    func recommendDay() async {
+        if devices.isEmpty { await loadDevices() }
+        nudged.removeAll(); transcript = ""; voiceError = nil
+        selected = Dictionary(uniqueKeysWithValues:
+            planDevices.map { ($0.id, TaskInput(deadline: defaultDeadline(for: $0), target: 80)) })
+        await runPlan(reveal: true)
+    }
+
     // MARK: conversational plan (voice → STT → parse → plan → spoken verdict)
 
     /// Spoken clip → transcript → plan. Drives the three on-stage status beats.
@@ -136,9 +146,8 @@ import SwiftUI
         Task { await runPlan() }
     }
 
-    private func runPlan() async {
+    private func runPlan(reveal: Bool = false) async {
         isLoading = true; errorText = nil
-        didReveal = false   // manual / re-plan path keeps the compact summary chip
         planNotes = []
         defer { isLoading = false }
         let inputs: [PlanTaskInput] = selected.map { (id, input) in
@@ -151,6 +160,7 @@ import SwiftUI
         }
         do {
             plan = try await api.planDay(tasks: inputs, mode: mode, clock: clock)
+            didReveal = reveal   // recommend/voice show the day-summary reveal; manual keeps the compact chip
             phase = .plan
         } catch { errorText = error.localizedDescription }
     }

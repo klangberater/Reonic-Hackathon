@@ -130,6 +130,30 @@ struct PlanDayView: View {
         .padding(20).cardSurface(22)
     }
 
+    // One-tap alternative to picking tasks: preview the whole day's best run/charge times.
+    private var recommendButton: some View {
+        Button { Task { await vm.recommendDay() } } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "wand.and.stars").font(.title3)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Recommend my day").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.green)
+                    Text("Best times to charge & run heavy appliances")
+                        .font(.caption).foregroundStyle(Theme.subtle)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 4)
+                if vm.isLoading { ProgressView().tint(Theme.green) }
+                else { Image(systemName: "chevron.right").font(.footnote).foregroundStyle(Theme.subtle) }
+            }
+            .foregroundStyle(Theme.green)
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.greenSoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.green.opacity(0.25), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .disabled(vm.isLoading)
+    }
+
     private var voicePrompt: String {
         if voice.isRecording { return "Listening\u{2026} tap to finish" }
         switch vm.voicePhase {
@@ -172,6 +196,7 @@ struct PlanDayView: View {
                 topBar
                 verdictLine
                 voiceBar
+                recommendButton
                 HStack(spacing: 10) {
                     Rectangle().fill(Theme.hairline).frame(height: 1)
                     Text("or pick manually").font(.caption).foregroundStyle(Theme.subtle).fixedSize()
