@@ -12,12 +12,14 @@ import { commitmentsFor, addCommitment, clearCommitments } from "./ledger";
 import { snapshotFor, insightsFor } from "./views";
 import { contractSummary } from "./contract";
 import { runChat } from "./openaiChat";
-import { planDay, PlanTaskInput } from "./planDay";
+import { planDay, PlanTaskInput, PlanResult } from "./planDay";
+import { parseTasks } from "./parseTasks";
+import { transcribe, synthesize } from "./elevenlabs";
 
 const PORT = parseInt(process.env.PORT || "8090", 10);
 const HOST = "127.0.0.1";
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "12mb" }));   // base64-encoded voice clips ride in the JSON body
 
 const hid = (req: express.Request) => (req.query.household as string) || (req.body?.household as string) || "HH-1001";
 const clk = (req: express.Request) => (req.query.clock as string) || (req.body?.clock as string);
@@ -130,9 +132,60 @@ app.post("/chat", async (req, res) => {
     }
 });
 
+// POST transcribe — spoken clip (base64) → text, via ElevenLabs STT. First wow beat: "it heard me".
+app.post("/transcribe", async (req, res) => {
+    if (!authed(req)) return res.status(401).json({ error: "unauthorized" });
+    const b64 = String(req.body?.audioBase64 || "");
+    if (!b64) return res.status(400).json({ error: "audioBase64 required" });
+    try {
+        const text = await transcribe(Buffer.from(b64, "base64"), String(req.body?.mime || "audio/m4a"));
+        res.json({ text });
+    } catch (e: any) {
+        res.status(e.code === 503 ? 503 : 500).json({ error: String(e.message || e) });
+    }
+});
+
+// POST plan_text — sentence → tasks → plan → spoken verdict (mp3 base64). Powers voice & text-fallback.
+app.post("/plan_text", async (req, res) => {
+    if (!authed(req)) return res.status(401).json({ error: "unauthorized" });
+    const text = String(req.body?.text || "").slice(0, 1000);
+    if (!text) return res.status(400).json({ error: "text required" });
+    try {
+        const id = hid(req);
+        const now = resolveNow(clk(req), req.body.at);
+        const mode = (req.body.mode as string) || "cheapest";
+        if (!["cheapest", "greenest", "soonest"].includes(mode)) return res.status(400).json({ error: "bad mode" });
+        const { tasks, notes } = await parseTasks(id, now, text);
+        if (!tasks.length) return res.status(422).json({ error: "I couldn't spot anything to schedule there — try naming the car, washing, dishes or dryer." });
+        const plan = planDay(id, now, mode as any, tasks);
+        const spokenLine = verdictLine(plan);
+        const speechBase64 = (await synthesize(spokenLine)).toString("base64");
+        res.json({ tasks, notes, plan, spokenLine, speechBase64 });
+    } catch (e: any) {
+        res.status(e.code === 503 ? 503 : 500).json({ error: String(e.message || e) });
+    }
+});
+
 app.listen(PORT, HOST, () => console.log(`reonic-backend on http://${HOST}:${PORT}`));
 
 // helpers
+function authed(req: express.Request): boolean {
+    const token = process.env.CHAT_TOKEN;
+    return !token || req.get("x-lumen-token") === token;
+}
+
+/** The spoken money reveal, built straight from the plan numbers (tools own the numbers). */
+function verdictLine(plan: PlanResult): string {
+    const optimized = plan.tasks.reduce((s, t) => s + t.gridCostEur, 0);
+    const baseline = optimized + plan.savedEur;
+    const eur = (v: number) => `€${v.toFixed(2)}`;
+    if (plan.savedEur < 0.05) {
+        return `Planned for the day — ${Math.round(plan.solarSharePct)}% of it runs on your own power.`;
+    }
+    const lead = plan.solarSharePct >= 80 ? "All done on sunshine" : "Planned for the day";
+    return `${lead} — ${eur(optimized)} instead of ${eur(baseline)}, ${Math.round(plan.solarSharePct)}% on your own power.`;
+}
+
 function windowOf(id: string, startISO: string, durationSlots: number): string {
     const recs = recordsArray(id); const s = indexOf(id, startISO);
     const e = recs[Math.min(recs.length - 1, s + durationSlots)].timestamp;

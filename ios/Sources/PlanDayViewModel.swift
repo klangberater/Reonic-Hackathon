@@ -3,6 +3,7 @@ import SwiftUI
 
 @MainActor final class PlanDayViewModel: ObservableObject {
     enum Phase { case pick, plan }
+    enum VoicePhase: Equatable { case idle, transcribing, planning }   // post-recording stages
 
     struct TaskInput { var deadline: Date; var target: Int }   // target used by car only
 
@@ -14,8 +15,17 @@ import SwiftUI
     @Published var nudged: [String: String] = [:]              // deviceId → pinned start ISO
     @Published var insights: Insights?                         // powers the header status chip
     @Published var state: EnergyState?                         // powers the verdict line (same as Home)
+    @Published var money: Money?                                // month-end forecast, shown in the flow sheet
     @Published var isLoading = false
     @Published var errorText: String?
+
+    // Conversational voice/text plan
+    @Published var voicePhase: VoicePhase = .idle
+    @Published var transcript = ""
+    @Published var voiceError: String?
+    @Published var didReveal = false                           // true → planState shows the big money reveal
+    @Published var planNotes: [String] = []                    // acknowledged context (e.g. "Guests at 8pm")
+    private let player = AudioPlayer.shared
 
     let clockStore: ClockStore
     private let api = APIClient()
@@ -46,9 +56,11 @@ import SwiftUI
         async let d = try? await api.devices(clock: clock)
         async let i = try? await api.insights(clock: clock)
         async let s = try? await api.state(clock: clock)
+        async let mo = try? await api.money(clock: clock)
         if let d = await d { devices = d }
         insights = await i
         state = await s
+        money = await mo
     }
 
     func toggle(_ device: Device) {
@@ -59,6 +71,61 @@ import SwiftUI
     func makePlan() async { await runPlan() }
     func replan() async { nudged.removeAll(); await runPlan() }
     func setMode(_ m: PlanMode) { mode = m; Task { await runPlan() } }
+
+    // MARK: conversational plan (voice → STT → parse → plan → spoken verdict)
+
+    /// Spoken clip → transcript → plan. Drives the three on-stage status beats.
+    func planFromVoice(audio: Data, mime: String) async {
+        voiceError = nil
+        voicePhase = .transcribing
+        do {
+            transcript = try await api.transcribe(audio: audio, mime: mime)
+            await runVoicePlan(text: transcript)
+        } catch {
+            voicePhase = .idle
+            voiceError = error.localizedDescription
+        }
+    }
+
+    /// Demo-safe fallback: type the sentence, skip the mic.
+    func planFromText(_ typed: String) async {
+        let text = typed.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        transcript = text
+        voiceError = nil
+        await runVoicePlan(text: text)
+    }
+
+    private func runVoicePlan(text: String) async {
+        guard !text.isEmpty else { voicePhase = .idle; voiceError = "I didn't catch that — try again, or type it below."; return }
+        if devices.isEmpty { await loadDevices() }   // need the library to mirror parsed tasks into `selected`
+        voicePhase = .planning
+        do {
+            let result = try await api.planText(text: text, mode: mode, clock: clock)
+            applyParsed(result.tasks)                // keep re-plan / mode-toggle / nudge working
+            planNotes = result.notes ?? []
+            plan = result.plan
+            phase = .plan
+            didReveal = true
+            voicePhase = .idle
+            if let data = Data(base64Encoded: result.speechBase64) { player.play(data) }
+        } catch {
+            voicePhase = .idle
+            voiceError = error.localizedDescription
+        }
+    }
+
+    /// Mirror the backend-parsed tasks into `selected` so the existing manual controls keep operating.
+    private func applyParsed(_ tasks: [PlanTextResult.ParsedTask]) {
+        selected.removeAll()
+        nudged.removeAll()
+        for t in tasks {
+            guard let device = devices.first(where: { $0.id == t.device }) else { continue }
+            let deadline = t.deadline.flatMap { Self.formatter.date(from: String($0.prefix(19))) }
+                ?? defaultDeadline(for: device)
+            selected[t.device] = TaskInput(deadline: deadline, target: t.target ?? 80)
+        }
+    }
 
     /// Nudge a task ±1h, pin it, and re-plan the rest around it.
     func nudge(device: String, deltaHours: Int) {
@@ -71,6 +138,8 @@ import SwiftUI
 
     private func runPlan() async {
         isLoading = true; errorText = nil
+        didReveal = false   // manual / re-plan path keeps the compact summary chip
+        planNotes = []
         defer { isLoading = false }
         let inputs: [PlanTaskInput] = selected.map { (id, input) in
             PlanTaskInput(
@@ -107,6 +176,7 @@ import SwiftUI
     /// exists in the dataset, matching the backend); winter stays fixed for the anomaly demo.
     private func nowDate() -> Date {
         if clock == .winter { return Self.formatter.date(from: "2026-01-15T08:00:00") ?? Date() }
+        if clock == .summerday { return Self.formatter.date(from: "2026-06-20T11:00:00") ?? Date() }
         let cal = berlinCal
         var c = cal.dateComponents([.year, .month, .day, .hour, .minute], from: Date())
         c.year = 2026
@@ -127,16 +197,23 @@ import SwiftUI
     /// on the real clock (pick 11am at 18:27 → tomorrow 11am). The planner reasons from the demo
     /// "now", so the result is always strictly after it.
     func normalizedDeadline(_ chosen: Date) -> Date {
+        // Anchor everything to the virtual "now" (`vnow`), not the real wall clock, so the
+        // pinned demo clocks (Sunny / Winter) roll deadlines coherently rather than against
+        // whatever time it happens to be on stage.
         let cal = berlinCal
         let vnow = nowDate()
         let hm = cal.dateComponents([.hour, .minute], from: chosen)
         var deadline = cal.date(bySettingHour: hm.hour ?? 20, minute: hm.minute ?? 0, second: 0, of: vnow) ?? vnow
-        let nowHM = cal.dateComponents([.hour, .minute], from: Date())
-        let chosenMin = (hm.hour ?? 0) * 60 + (hm.minute ?? 0)
-        let realMin = (nowHM.hour ?? 0) * 60 + (nowHM.minute ?? 0)
-        if chosenMin <= realMin { deadline = cal.date(byAdding: .day, value: 1, to: deadline) ?? deadline }
         while deadline <= vnow { deadline = cal.date(byAdding: .day, value: 1, to: deadline) ?? deadline }
         return deadline
+    }
+
+    /// "Today" / "Tomorrow" / "+Nd" for a planned task's start ISO, relative to the demo day.
+    func dayLabel(forISO iso: String) -> String {
+        let cal = berlinCal
+        guard let d = Self.formatter.date(from: String(iso.prefix(19))) else { return "" }
+        let days = cal.dateComponents([.day], from: cal.startOfDay(for: nowDate()), to: cal.startOfDay(for: d)).day ?? 0
+        return days <= 0 ? "Today" : days == 1 ? "Tomorrow" : "+\(days)d"
     }
 
     /// "today" / "tomorrow" / "+2d" label for a picked deadline, relative to the demo day.

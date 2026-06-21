@@ -6,14 +6,14 @@
 const DATA_YEAR = 2026;
 
 export const CLOCKS: Record<string, string> = {
-    winter: "2026-01-15T08:00:00", // cold morning, heat pump heavy (fixed demo scenario)
+    winter: "2026-01-15T08:00:00",    // cold morning, heat pump heavy (fixed anomaly demo)
+    summerday: "2026-06-20T11:00:00", // bright midday — plans land tasks under the solar curve (the voice-plan wow)
 };
 
 export function resolveNow(clock?: string, at?: string): string {
     if (at) return at;                               // explicit override (scripted demos / tests)
     const c = clock || process.env.DEMO_CLOCK || "summer";
-    if (c === "winter") return CLOCKS.winter;
-    return liveNow();                                // summer / default → live real time
+    return CLOCKS[c] ?? liveNow();                    // any pinned clock, else summer/default → live real time
 }
 
 /** Real Europe/Berlin wall-clock now, floored to the 15-min grid and pinned to the data year. */

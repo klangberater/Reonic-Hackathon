@@ -59,6 +59,20 @@ struct APIClient: Sendable {
     }
     private struct ResetResp: Decodable { let ok: Bool }
 
+    func transcribe(audio: Data, mime: String) async throws -> String {
+        struct Resp: Decodable { let text: String }
+        let body: [String: Any] = ["audioBase64": audio.base64EncodedString(), "mime": mime]
+        let r: Resp = try await postJSON("/transcribe", body: body)
+        return r.text
+    }
+
+    func planText(text: String, mode: PlanMode, household: String = Config.defaultHousehold, clock: DemoClock) async throws -> PlanTextResult {
+        let body: [String: Any] = [
+            "household": household, "clock": clock.rawValue, "mode": mode.rawValue, "text": text,
+        ]
+        return try await postJSON("/plan_text", body: body)
+    }
+
     func chat(message: String, history: [ChatMessage], household: String = Config.defaultHousehold, clock: DemoClock) async throws -> ChatResponse {
         let body: [String: Any] = [
             "household": household, "clock": clock.rawValue, "message": message,
@@ -76,7 +90,7 @@ struct APIClient: Sendable {
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         req.timeoutInterval = 40
         let (data, resp) = try await URLSession.shared.data(for: req)
-        try check(resp)
+        try check(resp, data)
         return try decoder().decode(T.self, from: data)
     }
 
@@ -86,7 +100,7 @@ struct APIClient: Sendable {
         c.queryItems = [.init(name: "household", value: household), .init(name: "clock", value: clock.rawValue)] + extra
         guard let url = c.url else { throw APIError(message: "bad URL") }
         let (data, resp) = try await URLSession.shared.data(from: url)
-        try check(resp)
+        try check(resp, data)
         return try decoder().decode(T.self, from: data)
     }
 
@@ -97,14 +111,19 @@ struct APIClient: Sendable {
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (data, resp) = try await URLSession.shared.data(for: req)
-        try check(resp)
+        try check(resp, data)
         return try decoder().decode(T.self, from: data)
     }
 
-    private func check(_ resp: URLResponse) throws {
-        guard let h = resp as? HTTPURLResponse, (200..<300).contains(h.statusCode) else {
-            throw APIError(message: "server returned \((resp as? HTTPURLResponse)?.statusCode ?? -1)")
+    private func check(_ resp: URLResponse, _ data: Data) throws {
+        guard let h = resp as? HTTPURLResponse else { throw APIError(message: "no response") }
+        if (200..<300).contains(h.statusCode) { return }
+        // Surface the backend's friendly { error } message when present (e.g. the parse-failure 422).
+        if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let msg = obj["error"] as? String, !msg.isEmpty {
+            throw APIError(message: msg)
         }
+        throw APIError(message: "server returned \(h.statusCode)")
     }
     private func decoder() -> JSONDecoder {
         let d = JSONDecoder(); d.keyDecodingStrategy = .convertFromSnakeCase; return d

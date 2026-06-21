@@ -91,9 +91,15 @@ struct CommitResponse: Decodable, Sendable {
 }
 
 enum DemoClock: String, CaseIterable, Identifiable, Sendable {
-    case summer, winter
+    case summer, summerday, winter
     var id: String { rawValue }
-    var label: String { self == .summer ? "Live" : "Winter demo" }
+    var label: String {
+        switch self {
+        case .summer: return "Live"
+        case .summerday: return "Sunny demo"
+        case .winter: return "Winter demo"
+        }
+    }
 }
 
 // MARK: - /chat
@@ -131,7 +137,22 @@ struct PlanResult: Decodable, Sendable {
         let start: String; let startHour: Int; let window: String
         let durationHours: Double; let source: String
         let ownSharePct: Double; let gridCostEur: Double; let controllable: Bool
+        let ownSource: String?      // solar | battery | mixed | none — explains a night-time "free" run
         var id: String { device }
+    }
+}
+
+// MARK: - /plan_text (conversational voice/text plan)
+struct PlanTextResult: Decodable, Sendable {
+    let tasks: [ParsedTask]
+    let notes: [String]?
+    let plan: PlanResult
+    let spokenLine: String
+    let speechBase64: String
+    struct ParsedTask: Decodable, Sendable {
+        let device: String
+        let deadline: String?
+        let target: Int?
     }
 }
 
