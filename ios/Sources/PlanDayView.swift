@@ -323,6 +323,8 @@ struct PlanDayView: View {
 
                     agenda(p)
 
+                    remindButton
+
                     if let dev = selectedBlock, let t = p.tasks.first(where: { $0.device == dev }) {
                         nudgeBar(t)
                     }
@@ -359,6 +361,26 @@ struct PlanDayView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Theme.card, in: Capsule())
                 .overlay(Capsule().strokeBorder(Theme.hairline, lineWidth: 1))
+            }
+        }
+    }
+
+    // Offer per-task notifications so the user gets nudged when each window opens.
+    private var remindButton: some View {
+        VStack(spacing: 6) {
+            Button { vm.scheduleReminders() } label: {
+                Label(vm.remindersSet ? "Reminders set" : "Remind me what to do when",
+                      systemImage: vm.remindersSet ? "checkmark.circle.fill" : "bell.badge.fill")
+                    .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 14)
+                    .background(vm.remindersSet ? Theme.greenSoft : Theme.green,
+                                in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .foregroundStyle(vm.remindersSet ? Theme.green : .white)
+            }
+            .buttonStyle(.plain)
+            .disabled(vm.remindersSet)
+            if vm.remindersDenied {
+                Text("Turn on notifications in Settings to get reminders.")
+                    .font(.caption).foregroundStyle(Theme.subtle).multilineTextAlignment(.center)
             }
         }
     }

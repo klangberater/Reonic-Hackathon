@@ -25,6 +25,8 @@ import SwiftUI
     @Published var voiceError: String?
     @Published var didReveal = false                           // true → planState shows the big money reveal
     @Published var planNotes: [String] = []                    // acknowledged context (e.g. "Guests at 8pm")
+    @Published var remindersSet = false                        // "Remind me" tapped → notifications scheduled
+    @Published var remindersDenied = false                     // notification permission was refused
     private let player = AudioPlayer.shared
 
     let clockStore: ClockStore
@@ -80,6 +82,63 @@ import SwiftUI
         selected = Dictionary(uniqueKeysWithValues:
             planDevices.map { ($0.id, TaskInput(deadline: defaultDeadline(for: $0), target: 80)) })
         await runPlan(reveal: true)
+    }
+
+    // MARK: reminders — notify the user when each task should run
+
+    /// Schedule a local notification for each planned task at its start time.
+    func scheduleReminders() {
+        guard let tasks = plan?.tasks else { return }
+        let reminders = tasks.map { t in
+            NotificationManager.Reminder(
+                id: t.device,
+                title: "Time to \(reminderVerb(t.device))",
+                body: reminderBody(t),
+                fireAt: reminderFireDate(t))
+        }
+        NotificationManager.schedulePlan(reminders) { [weak self] granted in
+            self?.remindersSet = granted
+            self?.remindersDenied = !granted
+        }
+    }
+
+    private func reminderVerb(_ device: String) -> String {
+        switch device {
+        case "ev": return "charge the car"
+        case "dishwasher": return "run the dishwasher"
+        case "washing_machine": return "run the washing machine"
+        case "dryer": return "run the dryer"
+        default: return "run it"
+        }
+    }
+
+    private func reminderBody(_ t: PlanResult.PlannedTask) -> String {
+        let end = String(t.window.suffix(5))
+        switch t.source {
+        case "free":
+            switch t.ownSource {
+            case "battery": return "Free — runs on your stored battery until \(end)."
+            case "mixed":   return "Free — your solar + battery cover it until \(end)."
+            default:        return "Free solar window — runs on sunshine until \(end)."
+            }
+        case "partial": return "Your greenest window — part solar, part grid, until \(end)."
+        default:        return "The cheapest window available, until \(end)."
+        }
+    }
+
+    /// The real wall-clock moment to fire: today (or +N days, matching the plan's day) at the
+    /// task's time-of-day, so reminders land at sensible times even with a pinned demo clock.
+    private func reminderFireDate(_ t: PlanResult.PlannedTask) -> Date {
+        let cal = berlinCal
+        guard let taskStart = Self.formatter.date(from: String(t.start.prefix(19))) else {
+            return Date().addingTimeInterval(8)
+        }
+        let dayOffset = cal.dateComponents([.day],
+            from: cal.startOfDay(for: nowDate()),
+            to: cal.startOfDay(for: taskStart)).day ?? 0
+        let hm = cal.dateComponents([.hour, .minute], from: taskStart)
+        let base = cal.date(byAdding: .day, value: max(0, dayOffset), to: cal.startOfDay(for: Date())) ?? Date()
+        return cal.date(bySettingHour: hm.hour ?? 9, minute: hm.minute ?? 0, second: 0, of: base) ?? base
     }
 
     // MARK: conversational plan (voice → STT → parse → plan → spoken verdict)
@@ -149,6 +208,7 @@ import SwiftUI
     private func runPlan(reveal: Bool = false) async {
         isLoading = true; errorText = nil
         planNotes = []
+        remindersSet = false; remindersDenied = false   // a changed plan needs fresh reminders
         defer { isLoading = false }
         let inputs: [PlanTaskInput] = selected.map { (id, input) in
             PlanTaskInput(
