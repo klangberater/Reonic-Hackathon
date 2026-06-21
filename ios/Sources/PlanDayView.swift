@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// Identifiable seed for the assistant sheet — drives `.sheet(item:)` so the seeded prompt is
+/// Identifiable seed for the assistant sheet — drives `.sheet(item:)` so the opening message is
 /// always passed at presentation (an isPresented+separate-state pair can race and arrive nil).
 struct ChatSeed: Identifiable {
     let id = UUID()
-    let prompt: String
+    let opener: String   // assistant's first message — the situation, stated up front
 }
 
 struct PlanDayView: View {
@@ -36,7 +36,7 @@ struct PlanDayView: View {
         .onChange(of: clockStore.clock) { _, _ in Task { await vm.loadDevices() } }
         .sheet(isPresented: $showSettings) { SettingsView(clock: clockStore).presentationDetents([.medium]) }
         .sheet(isPresented: $showFlow) { if let s = vm.state { FlowDetailView(state: s, money: vm.money) } }
-        .sheet(item: $chatSeed) { seed in ChatView(clock: vm.clock, initialPrompt: seed.prompt) }
+        .sheet(item: $chatSeed) { seed in ChatView(clock: vm.clock, opener: seed.opener) }
     }
 
     // Verdict: small, informative line (tap for the live flow) — same as Home.
@@ -94,12 +94,11 @@ struct PlanDayView: View {
         .background(alert ? Theme.redSoft : Theme.greenSoft, in: Capsule())
     }
 
-    /// Open the assistant seeded with the causal "why" for the active anomaly.
+    /// Open the assistant, leading with the anomaly facts (deterministic, from the insight) so the
+    /// user sees what's wrong before asking anything; follow-up questions carry it as context.
     private func askAboutAnomaly() {
         guard let a = vm.activeAnomaly else { return }
-        chatSeed = ChatSeed(prompt: a.subject == "solar"
-            ? "Why is my solar generating less than it should?"
-            : "Why is my heat pump using so much?")
+        chatSeed = ChatSeed(opener: "\(a.detail) \(a.suggestedAction) Ask me anything about it.")
     }
 
     // MARK: Voice — the conversational entry (top of the Plan screen)

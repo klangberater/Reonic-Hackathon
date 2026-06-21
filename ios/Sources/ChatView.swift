@@ -10,6 +10,13 @@ final class ChatVM: ObservableObject {
 
     init(clock: DemoClock) { self.clock = clock }
 
+    /// Seed the conversation with an assistant message (e.g. the anomaly facts) without an LLM
+    /// call — the user reads what's wrong first, then asks follow-ups that carry it as context.
+    func seedAssistant(_ text: String) {
+        guard messages.isEmpty else { return }
+        messages.append(ChatMessage(role: "assistant", content: text))
+    }
+
     func send(_ text: String? = nil) {
         let msg = (text ?? input).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !msg.isEmpty, !sending else { return }
@@ -33,6 +40,7 @@ struct ChatView: View {
     @StateObject private var vm: ChatVM
     @Environment(\.dismiss) private var dismiss
     private let initialPrompt: String?
+    private let opener: String?
 
     private let suggestions = [
         "Should I run the dishwasher now?",
@@ -40,9 +48,12 @@ struct ChatView: View {
         "Why might my bill be high?",
     ]
 
-    init(clock: DemoClock, initialPrompt: String? = nil) {
+    /// `opener`: an assistant message shown first (the situation). `initialPrompt`: a user
+    /// question sent immediately. Pass one or the other.
+    init(clock: DemoClock, initialPrompt: String? = nil, opener: String? = nil) {
         _vm = StateObject(wrappedValue: ChatVM(clock: clock))
         self.initialPrompt = initialPrompt
+        self.opener = opener
     }
 
     var body: some View {
@@ -69,7 +80,8 @@ struct ChatView: View {
             .warmScreen()
         }
         .task {
-            if let p = initialPrompt, vm.messages.isEmpty { vm.send(p) }
+            if let o = opener, vm.messages.isEmpty { vm.seedAssistant(o) }
+            else if let p = initialPrompt, vm.messages.isEmpty { vm.send(p) }
         }
     }
 

@@ -44,7 +44,7 @@ Judges remember moments, not features. The app opens on the **Plan-my-day screen
 
 2. **The plan it made.** Stay on the result. Point out the **agenda rail / timetable** (chronological, multi-day, with day separators), the **source traffic light** on each block, the Cheapest / Greenest / Soonest toggle, and the **nudge** (move a block ±1h → "Reset to best times" re-plans the rest around it). Honest control note: the car/wallbox is genuinely controllable; appliances are "set delay-start / we'll remind you."
 
-3. **The proactive anomaly — and the twist.** The status chip is already a red *"Attention"* (top-left). **Tap it** and the assistant explains the 69%: **"Solar output ~55% below normal — generating ~55% less than these sunny days normally yield (21 kWh/day vs ~48), sustained 4 days."** It's a **bright day but the panels are under-producing** — likely **soiling/dirt or shading** — and it suggests a panel clean. This is the payoff: the home didn't just plan your day, it caught *why* today wasn't all-solar. Same engine works in winter — flip to **Winter demo** and the same red chip explains the **heat pump at ~64% over** (defrost fault / low refrigerant / thermostat). One weather-normalised detector, two seasons, two faults. Tools produce the evidence; the model produces the words.
+3. **The proactive anomaly — and the twist.** The status chip is already a red *"Attention"* (top-left). **Tap it** and the assistant **opens by telling you what's wrong** — no need to know the question: **"Solar is generating ~55% less than these sunny days normally yield (21 kWh/day vs ~48), sustained 4 days… check the panels for dirt/soiling or shading."** It's a **bright day but the panels are under-producing** — then you can ask follow-ups. This is the payoff: the home didn't just plan your day, it caught *why* today wasn't all-solar. Same engine works in winter — flip to **Winter demo** and the same red chip explains the **heat pump at ~64% over** (defrost fault / low refrigerant / thermostat). One weather-normalised detector, two seasons, two faults. Tools produce the evidence; the model produces the words.
 
 ---
 
@@ -64,9 +64,9 @@ Nothing to generate: the sunny day, the solar-soiling run, and the heat-pump ano
 - Timetable: **Washing 11:00–12:30** (free · solar, green) · **Car 11:00–14:30** (68% own power, partial, €2.72 grid).
 - *Backup if mic/network is flaky:* type the same sentence — identical result, no audio dependency.
 
-**Step 2 — the twist (why only 69%?).** The top status chip is a red **"Attention"** (with a chevron). **Tap it → the assistant explains** (seeded with "Why is my solar generating less than it should?"):
-- *"Solar output ~55% below normal — generating ~55% less than these sunny days normally yield (21 kWh/day vs ~48), sustained 4 days."* (detected run 16–19 Jun)
-- Names **soiling/dirt, shading, or a string/inverter fault**, and suggests a panel clean — leading with the numbers.
+**Step 2 — the twist (why only 69%?).** The top status chip is a red **"Attention"** (with a chevron). **Tap it → the assistant opens by stating the situation** (deterministic facts, no typing):
+- *"Solar is generating ~55% less than these sunny days normally yield (21 kWh/day vs ~48), sustained 4 days. Check the panels for dirt/soiling or shading — book a clean or inspection. Ask me anything about it."*
+- Then **you can ask follow-ups** ("is it soiling or a fault?", "what would a clean save me?") — they hit the LLM with this context.
 
 The soiling is *why* the voice plan landed at 69% and not all-solar: one connected story.
 
@@ -75,7 +75,7 @@ The soiling is *why* the voice plan landed at 69% and not all-solar: one connect
 Flip the clock to prove the anomaly engine generalises. Status stays red **"Attention"** · verdict **"Pulling 3.1 kW from the grid right now."**
 *(Context: −1.2 °C, heat pump drawing 2.5 kW, battery 0%, importing 3.1 kW, price €0.48/kWh; month cost-to-date €320, projected €692.)*
 
-**Tap the red "Attention" chip → the assistant explains:** **"Heat pump using ~64% more than usual"** — *"…64% above what these temperatures normally need (2.2 kW vs ~1.4 kW), sustained 3 days… possible defrost fault, low refrigerant, or thermostat misconfiguration… other loads are normal, so it's isolated to the heat pump."* (run 12–14 Jan)
+**Tap the red "Attention" chip → the assistant opens with the facts:** *"Heat-pump electricity is ~64% above what these temperatures normally need (2.2 kW vs ~1.4 kW), sustained 3 days. Check heat pump settings / book a service inspection."* (run 12–14 Jan) Ask a follow-up ("is it the cold?") and it rules the weather out and names the likely cause (defrost fault / low refrigerant / thermostat).
 
 Two seasons, two faults, **one weather-normalised detector** — tools produce the evidence, the model produces the words.
 
