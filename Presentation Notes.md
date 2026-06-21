@@ -26,7 +26,7 @@ Say it plainly: **the assistant is the product** — not a dashboard with a chat
 
 **The four incumbent gaps we close** — each tied to a real complaint, which is what makes the pitch defensible:
 - No bill forecast (only earnings-to-date).
-- No forward price/tariff timeline — the thing Tibber/Octopus users love most.
+- Even the price-forward apps (Tibber/Octopus) just *show* you the price graph and leave you to time things yourself; **Cheapest mode** consumes those same forward prices and schedules your loads into the cheap hours for you.
 - Nothing explained in words.
 - No genuinely useful conversational layer.
 
