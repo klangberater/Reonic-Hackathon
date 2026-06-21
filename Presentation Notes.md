@@ -48,6 +48,35 @@ Judges remember moments, not features. The app opens on the **Plan-my-day screen
 
 ---
 
+## Video script — the 2-minute voiceover
+
+Three acts: **Intro 25s · Demo 60s · Tech 33s** ≈ 1:58, ~2s of air. VO in quotes; cut Beat 2 to one line if tight.
+
+### Act 1 — Intro (0:00–0:25) · ~65 words
+*On screen: the app open (or a 2-sec title card → app).*
+> "Every energy app today shows you a wall of charts and quietly makes *you* the analyst. **Lumen** flips that — it does the analysis and just tells you what to do. It's an assistant for homes with solar, a battery, a heat pump, an EV. One calm screen you *talk to*: tell it your day, it plans your energy around your own sunshine — and it catches problems before they hit your bill."
+
+### Act 2 — Product demo (0:25–1:25)
+**Beat 1 · voice plan (0:25–0:52)** — *tap mic, say ONLY the command, stop, then stay quiet and let the spoken reply land.*
+> (into the app) "Charge the car by tomorrow morning, and run a load of washing."
+> *[app speaks back]* "Planned for the day — €2.72 instead of €13.20, 69% on your own power."
+> (after it finishes) "It understood me, scheduled both around the solar peak, and told me the cost — real euros, not vibes."
+
+**Beat 2 · the plan (0:52–1:02)**
+> "Washing on free midday solar, the car across the sunniest hours. Green means free — your own power. The whole day's scheduled for me."
+
+**Beat 3 · the twist (1:02–1:25)** — *tap the red "Attention" chip.*
+> "But it said sixty-nine percent — not a hundred. Why?" *[tap → assistant opens with the facts]*
+> "It's a bright day, but my panels are generating fifty-five percent below normal — likely **dirt or shading**. It caught the fault, explained it in plain words, and that's *why* today couldn't run all-solar."
+
+### Act 3 — Technical complexity (1:25–1:58) · ~75 words
+*On screen: keep the app, or a simple architecture frame.*
+> "One principle under the hood: **tools do the math, the model does the words.** A TypeScript server owns every number; the AI only does language — so figures are always correct, never hallucinated. The voice loop is real end-to-end: speech-to-text, GPT-4o turns the sentence into structured tasks, our planner prices them against your solar and tariff, then it speaks the answer back. And the fault detection is **weather-normalized against your home's own history** — so it knows 'just cloudy' from 'actually broken.'"
+
+**Directing notes:** (1) Don't talk over the app's spoken reply in Beat 1 — leave a 2-sec gap; that TTS *is* the wow. (2) Mic = your Mac mic in the Simulator, so say only the command while it listens, then narrate after you tap stop (or type the command and narrate freely — the reply still speaks).
+
+---
+
 ## Demo runsheet — the 2-minute take (exact data)
 
 One continuous flow on **one screen, one clock** — no flipping. Set the **Demo clock** to **Sunny demo** (2026-06-20, 11:00) or **Live** (today) once before recording; everything below happens on that screen. Numbers are from the backend (`HH-1001`, "Familie Becker"), verified live. *(Prep: a clean status bar — `xcrun simctl status_bar booted override --time "9:41" --batteryLevel 100`.)*
