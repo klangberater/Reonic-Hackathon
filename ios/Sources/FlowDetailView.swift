@@ -79,10 +79,10 @@ struct FlowDetailView: View {
 
     private func moneyTile(_ icon: String, _ title: String, _ value: String, _ tint: Color) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
+            HStack(alignment: .top, spacing: 6) {
                 Image(systemName: icon).foregroundStyle(tint)
                 Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(2, reservesSpace: true)   // both titles reserve 2 lines → equal-height tiles
             }
             Text(value).font(.title2.weight(.bold)).foregroundStyle(Theme.ink)
         }
