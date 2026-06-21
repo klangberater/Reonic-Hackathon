@@ -44,42 +44,34 @@ Judges remember moments, not features. The app opens on the **Plan-my-day screen
 
 2. **The plan it made.** Stay on the result. Point out the **agenda rail / timetable** (chronological, multi-day, with day separators), the **source traffic light** on each block, the Cheapest / Greenest / Soonest toggle, and the **nudge** (move a block ±1h → "Reset to best times" re-plans the rest around it). Honest control note: the car/wallbox is genuinely controllable; appliances are "set delay-start / we'll remind you."
 
-3. **The proactive anomaly — and the twist.** The status chip is already a red *"Attention"* (top-left). **Tap it** and the assistant **opens by telling you what's wrong** — no need to know the question: **"Solar is generating ~55% less than these sunny days normally yield (21 kWh/day vs ~48), sustained 4 days… check the panels for dirt/soiling or shading."** It's a **bright day but the panels are under-producing** — then you can ask follow-ups. This is the payoff: the home didn't just plan your day, it caught *why* today wasn't all-solar. Same engine works in winter — flip to **Winter demo** and the same red chip explains the **heat pump at ~64% over** (defrost fault / low refrigerant / thermostat). One weather-normalised detector, two seasons, two faults. Tools produce the evidence; the model produces the words.
+3. **The proactive anomaly — and the twist.** The status chip is already a red *"Attention"* (top-left). **Tap it** and the assistant **opens by telling you what's wrong** — no need to know the question: **"Solar is generating ~55% less than these sunny days normally yield (21 kWh/day vs ~48), sustained 4 days… check the panels for dirt/soiling or shading."** It's a **bright day but the panels are under-producing** — then you can ask follow-ups. This is the payoff: the home didn't just plan your day, it caught *why* today wasn't all-solar. Tools produce the evidence; the model produces the words. *(One narration line you can drop in: the same weather-normalised detector also catches a heat-pump fault in winter — two seasons, one engine. No need to show it.)*
 
 ---
 
-## Demo runsheet — exact data (rehearse against these)
+## Demo runsheet — the 2-minute take (exact data)
 
-Nothing to generate: the sunny day, the solar-soiling run, and the heat-pump anomaly are all seeded in the synthetic dataset and detected live. You only set the **Demo clock** (Settings → Demo clock). Numbers below are from the backend (`HH-1001`, "Familie Becker"). The **demo day is the summer day** — voice plan and the solar anomaly happen on the *same* screen and tell one story.
+One continuous flow on **one screen, one clock** — no flipping. Set the **Demo clock** to **Sunny demo** (2026-06-20, 11:00) or **Live** (today) once before recording; everything below happens on that screen. Numbers are from the backend (`HH-1001`, "Familie Becker"), verified live. *(Prep: a clean status bar — `xcrun simctl status_bar booted override --time "9:41" --batteryLevel 100`.)*
 
-### Scenario A — Voice plan + solar anomaly (the demo day) · clock = **Sunny demo** (2026-06-20, 11:00) or **Live** (today)
+**Open on:** red **"Attention"** chip (top-left) · verdict **"Running on free solar — sending 4.5 kW to the grid."**
+*(Context if asked on-screen: 27.5 °C, solar 4.8 kW — dimmed by soiling — battery 100%, price €0.12/kWh.)*
 
-**On open you'll see:** status chip is red **"Attention"** · verdict **"Running on free solar — sending 4.5 kW to the grid."**
-*(Context: 27.5 °C, solar 4.8 kW — dimmed by soiling — battery 100%, exporting 4.5 kW, price €0.12/kWh.)*
-
-**Step 1 — plan by voice.** Tap the mic (or type in "or type it here…"): *"Charge the car by tomorrow morning, and run a load of washing."*
+**Beat 1 — plan by voice (the wow).** Tap the mic — say **only the command**, then stop (the Simulator mic is your Mac mic; narrate *after* you stop): *"Charge the car by tomorrow morning, and run a load of washing."*
 - Transcript quote → "Understanding what you said…" → "Laying it under the sun…"
 - **Spoken + on-screen reveal:** *"Planned for the day — €2.72 instead of €13.20, 69% on your own power."*
 - **Saves €10.48 / 9.8 kg CO₂ today** vs a last-minute run.
 - Timetable: **Washing 11:00–12:30** (free · solar, green) · **Car 11:00–14:30** (68% own power, partial, €2.72 grid).
-- *Backup if mic/network is flaky:* type the same sentence — identical result, no audio dependency.
+- *If the mic is fussy on a take:* type the same sentence in "or type it here…" — identical result, the reply still speaks.
 
-**Step 2 — the twist (why only 69%?).** The top status chip is a red **"Attention"** (with a chevron). **Tap it → the assistant opens by stating the situation** (deterministic facts, no typing):
+**Beat 2 — the plan it made.** Brief: the **agenda rail**, the **source traffic light** (green/yellow/red = free/partial/paid), the Cheapest/Greenest/Soonest toggle, the **nudge** ("Reset to best times").
+
+**Beat 3 — the twist (why only 69%?).** Tap the red **"Attention"** chip. The assistant **opens by stating the situation** (deterministic facts, no typing):
 - *"Solar is generating ~55% less than these sunny days normally yield (21 kWh/day vs ~48), sustained 4 days. Check the panels for dirt/soiling or shading — book a clean or inspection. Ask me anything about it."*
-- Then **you can ask follow-ups** ("is it soiling or a fault?", "what would a clean save me?") — they hit the LLM with this context.
+- Optional: ask one follow-up ("is it soiling or a fault?") — it hits the LLM with this context.
+- Close on the line: the soiling is *why* the plan was 69% and not all-solar — **the home caught the fault and explained it.**
 
-The soiling is *why* the voice plan landed at 69% and not all-solar: one connected story.
+*(Optional narration, no screen change: "the same detector catches a heat-pump fault in winter — two seasons, one engine.")*
 
-### Scenario B — Same detector, another season · clock = **Winter demo** (2026-01-15, 08:00)
-
-Flip the clock to prove the anomaly engine generalises. Status stays red **"Attention"** · verdict **"Pulling 3.1 kW from the grid right now."**
-*(Context: −1.2 °C, heat pump drawing 2.5 kW, battery 0%, importing 3.1 kW, price €0.48/kWh; month cost-to-date €320, projected €692.)*
-
-**Tap the red "Attention" chip → the assistant opens with the facts:** *"Heat-pump electricity is ~64% above what these temperatures normally need (2.2 kW vs ~1.4 kW), sustained 3 days. Check heat pump settings / book a service inspection."* (run 12–14 Jan) Ask a follow-up ("is it the cold?") and it rules the weather out and names the likely cause (defrost fault / low refrigerant / thermostat).
-
-Two seasons, two faults, **one weather-normalised detector** — tools produce the evidence, the model produces the words.
-
-> **Why 69% and not 98%:** the panels are dirty across the demo window, so the live solar (4.8 kW) is genuinely lower and the plan can't be all-solar — and the anomaly card explains exactly that. If you'd rather show a pristine "all done on sunshine" voice plan, the soiling window (`SOIL_START..SOIL_END` in `scripts/transform_dataset.py`) can be pulled back off the demo day and the data regenerated.
+> **Why 69% and not 98%:** the panels are dirty across the demo window, so the live solar (4.8 kW) is genuinely lower — and the anomaly explains exactly that. To show a pristine "all done on sunshine" voice plan instead, pull the soiling window (`SOIL_START..SOIL_END` in `scripts/transform_dataset.py`) off the demo day and regenerate the data.
 
 ---
 
