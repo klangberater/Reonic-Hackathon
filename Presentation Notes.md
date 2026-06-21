@@ -70,7 +70,7 @@ Three acts: **Intro 25s · Demo 60s · Tech 33s** ≈ 1:58, ~2s of air. VO in qu
 > "It's a bright day, but my panels are generating fifty-five percent below normal — likely **dirt or shading**. It caught the fault, explained it in plain words, and that's *why* today couldn't run all-solar."
 
 ### Act 3 — Technical complexity (1:25–2:00) · ~85 words
-*On screen: keep the app, or a simple architecture frame.*
+*On screen: the architecture frame — `presentation/architecture.svg` (open in a browser, export PNG at 2×). Green = deterministic tools that own the numbers; blue = the model (words only).*
 > "Under the hood, one principle: **tools do the math, the model does the words** — a TypeScript server owns every number, so nothing's hallucinated and the figures are repeatable. The hard part is the **fault detection**: from your home's *own* history it learns what the panels — or the heat pump — should do at each temperature, then flags a sustained break from that. That's how it tells a cloudy day apart from a failing one. A **source-first scheduler** then routes each load around the ones already committed — all on a **physically-simulated year of data whose energy balance closes to zero**. The voice loop on top is real, end-to-end."
 
 *Runs ~35s. To hit a hard 30s, drop "That's how it tells a cloudy day apart from a failing one" (the demo already showed it).*

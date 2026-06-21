@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 600" width="1040" height="600" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" role="img" aria-label="Lumen architecture: tools do the math, the model does the words">
+  <title>How Lumen works — tools do the math, the model does the words</title>
+  <desc>Voice and screen on the phone talk to a TypeScript MCP server that owns every number; GPT-4o only does language; deterministic engines (scheduler, anomaly detection) run on a physically-simulated year of data.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1040" height="600" rx="0" fill="#0C1211"/>
+
+  <text x="48" y="58" fill="#EAF0EC" font-size="30" font-weight="600">Tools do the math — the model does the words</text>
+  <text x="48" y="88" fill="#8B978F" font-size="16">Every figure comes from a tool. The model never invents a number.</text>
+
+  <g stroke-linecap="round">
+    <line x1="208" y1="186" x2="244" y2="186" stroke="#6B7770" stroke-width="1.4" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+    <line x1="418" y1="186" x2="454" y2="186" stroke="#6B7770" stroke-width="1.4" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+    <line x1="690" y1="186" x2="836" y2="186" stroke="#6B7770" stroke-width="1.4" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+    <line x1="520" y1="232" x2="430" y2="306" stroke="#34D399" stroke-opacity="0.6" stroke-width="1.4" marker-end="url(#arrow)"/>
+    <line x1="610" y1="232" x2="664" y2="306" stroke="#34D399" stroke-opacity="0.6" stroke-width="1.4" marker-end="url(#arrow)"/>
+    <line x1="452" y1="430" x2="430" y2="396" stroke="#6B7770" stroke-width="1.4" marker-end="url(#arrow)"/>
+    <line x1="640" y1="430" x2="664" y2="396" stroke="#6B7770" stroke-width="1.4" marker-end="url(#arrow)"/>
+  </g>
+
+  <g>
+    <rect x="48" y="144" width="160" height="84" rx="6" fill="#19221F" stroke="#2B352F" stroke-width="0.5"/>
+    <text x="128" y="180" text-anchor="middle" fill="#EAF0EC" font-size="18">You</text>
+    <text x="128" y="204" text-anchor="middle" fill="#8B978F" font-size="13">speak · see the plan</text>
+  </g>
+
+  <g>
+    <rect x="244" y="144" width="174" height="84" rx="6" fill="#19221F" stroke="#2B352F" stroke-width="0.5"/>
+    <text x="331" y="180" text-anchor="middle" fill="#EAF0EC" font-size="18">ElevenLabs</text>
+    <text x="331" y="204" text-anchor="middle" fill="#8B978F" font-size="13">voice ↔ text</text>
+  </g>
+
+  <g>
+    <rect x="454" y="138" width="236" height="96" rx="8" fill="#0F211B" stroke="#34D399" stroke-opacity="0.7" stroke-width="1"/>
+    <text x="572" y="178" text-anchor="middle" fill="#34D399" font-size="19" font-weight="600">MCP server · TypeScript</text>
+    <text x="572" y="202" text-anchor="middle" fill="#A9D9C7" font-size="13">owns every number</text>
+  </g>
+
+  <g>
+    <rect x="836" y="144" width="156" height="84" rx="6" fill="#0E1B2B" stroke="#60A5FA" stroke-opacity="0.7" stroke-width="1"/>
+    <text x="914" y="180" text-anchor="middle" fill="#60A5FA" font-size="18" font-weight="600">GPT-4o</text>
+    <text x="914" y="204" text-anchor="middle" fill="#9CC2EE" font-size="13">words · intent only</text>
+  </g>
+
+  <g>
+    <rect x="300" y="306" width="200" height="90" rx="6" fill="#0F211B" stroke="#34D399" stroke-opacity="0.5" stroke-width="0.5"/>
+    <text x="400" y="342" text-anchor="middle" fill="#EAF0EC" font-size="17">Scheduler</text>
+    <text x="400" y="366" text-anchor="middle" fill="#8B978F" font-size="13">around committed loads</text>
+  </g>
+
+  <g>
+    <rect x="540" y="300" width="232" height="96" rx="6" fill="#0F211B" stroke="#34D399" stroke-opacity="0.95" stroke-width="1.4"/>
+    <text x="656" y="338" text-anchor="middle" fill="#EAF0EC" font-size="17" font-weight="500">Anomaly detection</text>
+    <text x="656" y="362" text-anchor="middle" fill="#A9D9C7" font-size="13">vs your home's own history</text>
+  </g>
+
+  <g>
+    <rect x="360" y="430" width="340" height="74" rx="6" fill="#19221F" stroke="#2B352F" stroke-width="0.5"/>
+    <text x="530" y="464" text-anchor="middle" fill="#EAF0EC" font-size="17">Simulated year of data</text>
+    <text x="530" y="488" text-anchor="middle" fill="#8B978F" font-size="13">15-min · energy balance ≈ 0</text>
+  </g>
+
+  <g>
+    <rect x="48" y="540" width="14" height="14" rx="3" fill="#0F211B" stroke="#34D399" stroke-opacity="0.8" stroke-width="1"/>
+    <text x="70" y="551" fill="#8B978F" font-size="13">deterministic tools — the numbers</text>
+    <rect x="360" y="540" width="14" height="14" rx="3" fill="#0E1B2B" stroke="#60A5FA" stroke-opacity="0.8" stroke-width="1"/>
+    <text x="382" y="551" fill="#8B978F" font-size="13">the model — words &amp; intent</text>
+  </g>
+</svg>
