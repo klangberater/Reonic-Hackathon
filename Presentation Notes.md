@@ -1,6 +1,6 @@
 # Presentation Notes — 2-Minute Demo
 
-Working name: **Lumen** · Enpal track · iOS app + TypeScript MCP backend + synthetic household data.
+Working name: **Lumen** · Enpal track · iOS app + TypeScript backend + synthetic household data.
 
 Demo requirements: (1) detailed explanation of the solution, (2) live walkthrough of key features. Target runtime ~2:00.
 
@@ -30,7 +30,7 @@ Say it plainly: **the assistant is the product** — not a dashboard with a chat
 - Nothing explained in words.
 - No genuinely useful conversational layer.
 
-**Architecture principle — say it out loud (credibility line):** *tools do the math, the model does the words.* The TypeScript **MCP server** owns all arithmetic; the LLM only does language and judgment, calling tools for every number. This is what makes on-stage numbers correct and repeatable instead of the model saying "€0.42" once and "€4.20" on the re-run. It now runs end-to-end through the **voice pipeline** too: ElevenLabs does speech-to-text, GPT-4o parses the sentence into *structured tasks only*, the MCP server plans and prices them, and ElevenLabs speaks back a verdict built straight from the plan's numbers. The model never invents a euro. Call out the MCP server explicitly — it's the architecture-slide moment.
+**Architecture principle — say it out loud (credibility line):** *tools do the math, the model does the words.* The **TypeScript backend** owns all arithmetic; the LLM only does language and judgment, calling our tools (functions) for every number. This is what makes on-stage numbers correct and repeatable instead of the model saying "€0.42" once and "€4.20" on the re-run. It runs end-to-end through the **voice pipeline** too: ElevenLabs does speech-to-text, GPT-4o parses the sentence into *structured tasks only*, the backend plans and prices them, and ElevenLabs speaks back a verdict built straight from the plan's numbers. The model never invents a euro. Call out the backend-owns-the-numbers boundary explicitly — it's the architecture-slide moment.
 
 **The differentiator — name it as the differentiator:** Lumen is a **planner, not just an advisor.** Tell it your day → it finds the greenest/cheapest times → you confirm → loads route around each other (sequential planning; confirmed plans don't silently move). Two incumbent-beating details: the **source traffic light** (green = free own-solar/battery, yellow = partial, red = paid grid — it's about energy *source*, so it works on fixed tariffs too) and a **multi-day timetable** with nudge + re-plan. This is the single most differentiating piece versus every incumbent.
 
