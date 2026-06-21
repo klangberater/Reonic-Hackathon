@@ -38,13 +38,13 @@ Say it plainly: **the assistant is the product** — not a dashboard with a chat
 
 ## Part 2 — Live walkthrough (the three rehearsed moments)
 
-Judges remember moments, not features. The app opens on the **Plan-my-day screen**: a status chip (top-left), a one-line verdict of what the home is doing right now, a big **voice mic**, a manual device grid, and — when something's wrong — a red "Needs a look" card. Hit exactly these three moments:
+Judges remember moments, not features. The app opens on the **Plan-my-day screen**: a status chip (top-left) — green "All good" or, when something's wrong, a tappable red **"Attention"** — a one-line verdict of what the home is doing right now, a big **voice mic**, and a manual device grid. Hit exactly these three moments:
 
 1. **Plan by voice (the wow).** On the **Sunny demo** clock, tap the mic and say *"charge the car by tomorrow morning, and run a load of washing."* The transcript appears, the money reveal animates in, and **the app speaks it back**: *"Planned for the day — €2.72 instead of €13.20, 69% on your own power."* The timetable puts the washing on free midday solar and the car across the solar peak. This is the headline: you talked to your home and it planned your day around the sun. (Note the **69%**, not 100% — that's deliberate, and moment 3 explains it.)
 
 2. **The plan it made.** Stay on the result. Point out the **agenda rail / timetable** (chronological, multi-day, with day separators), the **source traffic light** on each block, the Cheapest / Greenest / Soonest toggle, and the **nudge** (move a block ±1h → "Reset to best times" re-plans the rest around it). Honest control note: the car/wallbox is genuinely controllable; appliances are "set delay-start / we'll remind you."
 
-3. **The proactive anomaly — and the twist.** The status chip is already a red *"Attention"* — and below "Make my plan" a **"Needs a look"** card explains the 69%: **"Solar output ~55% below normal"** — *"generating ~55% less than these sunny days normally yield (21 kWh/day vs ~48), sustained 4 days."* It's a **bright day but the panels are under-producing** — likely **soiling/dirt or shading**. **Tap the card and the assistant explains the cause** and suggests a panel clean. This is the payoff: the home didn't just plan your day, it caught *why* today wasn't all-solar. Same engine works in winter — flip to **Winter demo** and the identical card flags the **heat pump at ~64% over** (defrost fault / low refrigerant / thermostat). One weather-normalised detector, two seasons, two faults. Tools produce the evidence; the model produces the words.
+3. **The proactive anomaly — and the twist.** The status chip is already a red *"Attention"* (top-left). **Tap it** and the assistant explains the 69%: **"Solar output ~55% below normal — generating ~55% less than these sunny days normally yield (21 kWh/day vs ~48), sustained 4 days."** It's a **bright day but the panels are under-producing** — likely **soiling/dirt or shading** — and it suggests a panel clean. This is the payoff: the home didn't just plan your day, it caught *why* today wasn't all-solar. Same engine works in winter — flip to **Winter demo** and the same red chip explains the **heat pump at ~64% over** (defrost fault / low refrigerant / thermostat). One weather-normalised detector, two seasons, two faults. Tools produce the evidence; the model produces the words.
 
 ---
 
@@ -64,20 +64,18 @@ Nothing to generate: the sunny day, the solar-soiling run, and the heat-pump ano
 - Timetable: **Washing 11:00–12:30** (free · solar, green) · **Car 11:00–14:30** (68% own power, partial, €2.72 grid).
 - *Backup if mic/network is flaky:* type the same sentence — identical result, no audio dependency.
 
-**Step 2 — the twist (why only 69%?).** Below "Make my plan", a red **"Needs a look"** card:
-- Title: **"Solar output ~55% below normal"**
-- Detail: *"Solar is generating ~55% less than these sunny days normally yield (21 kWh/day vs ~48), sustained 4 days."* (period 16–19 Jun)
-- Action: *"Check the panels for dirt/soiling or shading — book a clean or inspection."* + an **"Ask why"** affordance.
+**Step 2 — the twist (why only 69%?).** The top status chip is a red **"Attention"** (with a chevron). **Tap it → the assistant explains** (seeded with "Why is my solar generating less than it should?"):
+- *"Solar output ~55% below normal — generating ~55% less than these sunny days normally yield (21 kWh/day vs ~48), sustained 4 days."* (detected run 16–19 Jun)
+- Names **soiling/dirt, shading, or a string/inverter fault**, and suggests a panel clean — leading with the numbers.
 
-**Tap the card → the assistant explains** (seeded with "Why is my solar generating less than it should?"): names **soiling/dirt, shading, or a string/inverter fault**, and suggests a panel clean — leading with the numbers. The soiling is *why* the voice plan landed at 69% and not all-solar: one connected story.
+The soiling is *why* the voice plan landed at 69% and not all-solar: one connected story.
 
 ### Scenario B — Same detector, another season · clock = **Winter demo** (2026-01-15, 08:00)
 
 Flip the clock to prove the anomaly engine generalises. Status stays red **"Attention"** · verdict **"Pulling 3.1 kW from the grid right now."**
 *(Context: −1.2 °C, heat pump drawing 2.5 kW, battery 0%, importing 3.1 kW, price €0.48/kWh; month cost-to-date €320, projected €692.)*
 
-**"Needs a look" card:** **"Heat pump using ~64% more than usual"** — *"~64% above what these temperatures normally need (2.2 kW vs ~1.4 kW), sustained 3 days"* (12–14 Jan). Action: *"Check heat pump settings / book a service inspection."*
-**Tap → the assistant explains:** *"…64% higher than expected for these temperatures… possible defrost fault, low refrigerant, or thermostat misconfiguration… other loads are normal, so it's isolated to the heat pump."*
+**Tap the red "Attention" chip → the assistant explains:** **"Heat pump using ~64% more than usual"** — *"…64% above what these temperatures normally need (2.2 kW vs ~1.4 kW), sustained 3 days… possible defrost fault, low refrigerant, or thermostat misconfiguration… other loads are normal, so it's isolated to the heat pump."* (run 12–14 Jan)
 
 Two seasons, two faults, **one weather-normalised detector** — tools produce the evidence, the model produces the words.
 
