@@ -15,6 +15,7 @@ import SwiftUI
     @Published var nudged: [String: String] = [:]              // deviceId → pinned start ISO
     @Published var insights: Insights?                         // powers the header status chip
     @Published var state: EnergyState?                         // powers the verdict line (same as Home)
+    @Published var money: Money?                                // month-end forecast, shown in the flow sheet
     @Published var isLoading = false
     @Published var errorText: String?
 
@@ -55,9 +56,11 @@ import SwiftUI
         async let d = try? await api.devices(clock: clock)
         async let i = try? await api.insights(clock: clock)
         async let s = try? await api.state(clock: clock)
+        async let mo = try? await api.money(clock: clock)
         if let d = await d { devices = d }
         insights = await i
         state = await s
+        money = await mo
     }
 
     func toggle(_ device: Device) {

@@ -27,7 +27,7 @@ struct PlanDayView: View {
         .task { if vm.devices.isEmpty { await vm.loadDevices() } }
         .onChange(of: clockStore.clock) { _, _ in Task { await vm.loadDevices() } }
         .sheet(isPresented: $showSettings) { SettingsView(clock: clockStore).presentationDetents([.medium]) }
-        .sheet(isPresented: $showFlow) { if let s = vm.state { FlowDetailView(state: s) } }
+        .sheet(isPresented: $showFlow) { if let s = vm.state { FlowDetailView(state: s, money: vm.money) } }
     }
 
     // Verdict: small, informative line (tap for the live flow) — same as Home.
