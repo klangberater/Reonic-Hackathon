@@ -289,12 +289,17 @@ struct PlanDayView: View {
                         nudgeBar(t)
                     }
 
-                    Button { Task { selectedBlock = nil; await vm.replan() } } label: {
-                        Label("Re-plan", systemImage: "arrow.triangle.2.circlepath")
-                            .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 14)
-                            .background(Theme.greenSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .foregroundStyle(Theme.green)
-                    }.buttonStyle(.plain)
+                    // Only meaningful once you've nudged a task — it discards the pins and
+                    // returns every task to the optimiser's best slot. Hidden otherwise
+                    // (re-running an un-nudged plan yields the identical schedule).
+                    if !vm.nudged.isEmpty {
+                        Button { Task { selectedBlock = nil; await vm.replan() } } label: {
+                            Label("Reset to best times", systemImage: "arrow.uturn.backward")
+                                .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 14)
+                                .background(Theme.greenSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                .foregroundStyle(Theme.green)
+                        }.buttonStyle(.plain)
+                    }
                 }
                 .padding(20)
             }
