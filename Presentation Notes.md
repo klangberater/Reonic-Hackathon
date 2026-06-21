@@ -44,7 +44,7 @@ Judges remember moments, not features. The app opens on the **Plan-my-day screen
 
 2. **The plan it made.** Stay on the result. Point out the **agenda rail / timetable** (chronological, multi-day, with day separators), the **source traffic light** on each block, the Cheapest / Greenest / Soonest toggle, and the **nudge** (move a block ±1h → "Reset to best times" re-plans the rest around it). Honest control note: the car/wallbox is genuinely controllable; appliances are "set delay-start / we'll remind you."
 
-3. **The proactive anomaly.** Switch the clock to **Winter demo** in Settings. The status chip flips from a quiet green *"All good"* to a loud red *"Attention,"* and a **"Needs a look"** card surfaces *unprompted*: **"Heat pump using ~64% more than usual"** — *"~64% above what these temperatures normally need (2.2 kW vs ~1.4 kW), sustained 3 days"* — with the action *"Check heat pump settings / book a service inspection."* This is the credibility beat: the number is **weather-normalised against the home's own history**, so it tells "it's just cold out" apart from "something's actually wrong," and confirms other loads are normal so the fault is isolated to the pump. Tools produce the evidence; the assistant supplies the causal words (defrost fault / low refrigerant / thermostat).
+3. **The proactive anomaly.** Switch the clock to **Winter demo** in Settings. The status chip flips from a quiet green *"All good"* to a loud red *"Attention,"* and a **"Needs a look"** card surfaces *unprompted*: **"Heat pump using ~64% more than usual"** — *"~64% above what these temperatures normally need (2.2 kW vs ~1.4 kW), sustained 3 days"* — with the action *"Check heat pump settings / book a service inspection."* This is the credibility beat: the number is **weather-normalised against the home's own history**, so it tells "it's just cold out" apart from "something's actually wrong," and confirms other loads are normal so the fault is isolated to the pump. **Tap the card and the assistant explains the cause** (defrost fault / low refrigerant / thermostat). Tools produce the evidence; the model produces the words.
 
 ---
 
@@ -76,11 +76,9 @@ Nothing to generate: the sunny day and the heat-pump anomaly are already seeded 
 **"Needs a look" card (below Make my plan):**
 - Title: **"Heat pump using ~64% more than usual"**
 - Detail: *"Heat-pump electricity is ~64% above what these temperatures normally need (2.2 kW vs ~1.4 kW), sustained 3 days."* (period 12–14 Jan)
-- Action: *"Check heat pump settings / book a service inspection."*
+- Action: *"Check heat pump settings / book a service inspection."* + an **"Ask why"** affordance.
 
-**The causal narrative (assistant adding words to the tool's numbers):** *"…about 64% higher than expected for these temperatures, sustained three days. Possible defrost fault, low refrigerant, or thermostat misconfiguration… other loads are normal, so it's isolated to the heat pump."*
-
-> **Honesty for the demo:** the on-screen card is the wired moment. The conversational *chat* surface that voices the causal "why" is dialled back in this single-screen cut — it's backend-proven and reachable via the assistant, but don't click a chat button that isn't on screen. Demo the card; *describe* the causal depth.
+**Tap the card → the assistant explains the cause** (seeded with "Why is my heat pump using so much?"). It answers: *"…about 64% higher than expected for these temperatures, sustained three days. Possible defrost fault, low refrigerant, or thermostat misconfiguration… other loads are normal, so it's isolated to the heat pump."* This is the payoff line: **the tool produces the evidence (weather-normalised against the home's own history), the model produces the words** — same architecture principle as the voice plan, now catching a fault before the bill does.
 
 ### Third clock — **Live**
 Tracks the real wall clock (pinned to the data year). Great for "this is real-time," but at night there's no solar, so **don't** run the voice-plan wow on it — use Sunny demo for that beat.
