@@ -7,6 +7,8 @@ struct PlanDayView: View {
     @State private var selectedBlock: String?
     @State private var showSettings = false
     @State private var showFlow = false
+    @State private var showChat = false
+    @State private var chatSeed: String?
     @State private var typed = ""
     @FocusState private var typingFocused: Bool
 
@@ -28,6 +30,7 @@ struct PlanDayView: View {
         .onChange(of: clockStore.clock) { _, _ in Task { await vm.loadDevices() } }
         .sheet(isPresented: $showSettings) { SettingsView(clock: clockStore).presentationDetents([.medium]) }
         .sheet(isPresented: $showFlow) { if let s = vm.state { FlowDetailView(state: s, money: vm.money) } }
+        .sheet(isPresented: $showChat, onDismiss: { chatSeed = nil }) { ChatView(clock: vm.clock, initialPrompt: chatSeed) }
     }
 
     // Verdict: small, informative line (tap for the live flow) — same as Home.
@@ -191,19 +194,31 @@ struct PlanDayView: View {
     }
 
     // Surfaced below "Make my plan" when the home has a live anomaly (e.g. the heat-pump fault).
+    // Tap → opens the assistant seeded with the causal "why" question.
     @ViewBuilder private var anomalyCard: some View {
         if let a = vm.activeAnomaly {
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Needs a look", systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption.bold()).foregroundStyle(Theme.red)
-                Text(a.title).font(.system(.headline)).foregroundStyle(Theme.ink)
-                Text(a.detail).font(.subheadline).foregroundStyle(Theme.subtle)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(a.suggestedAction).font(.footnote.weight(.medium)).foregroundStyle(Theme.red)
+            Button {
+                chatSeed = "Why is my heat pump using so much?"
+                showChat = true
+            } label: {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Needs a look", systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption.bold()).foregroundStyle(Theme.red)
+                    Text(a.title).font(.system(.headline)).foregroundStyle(Theme.ink)
+                    Text(a.detail).font(.subheadline).foregroundStyle(Theme.subtle)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 6) {
+                        Text(a.suggestedAction).font(.footnote.weight(.medium)).foregroundStyle(Theme.red)
+                        Spacer(minLength: 4)
+                        Text("Ask why").font(.footnote.weight(.semibold)).foregroundStyle(Theme.red)
+                        Image(systemName: "sparkles").font(.caption2).foregroundStyle(Theme.red)
+                    }
+                }
+                .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                .background(Theme.redSoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.red.opacity(0.35), lineWidth: 1))
             }
-            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.redSoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.red.opacity(0.35), lineWidth: 1))
+            .buttonStyle(.plain)
         }
     }
 
