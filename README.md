@@ -32,27 +32,36 @@ detection and the schedule are all computed from a coherent year of 15-minute te
 
 ## What it does
 
-Three product surfaces, each a "demo moment":
+The app is **one conversation with your home**: say (or tap) what you want to get done today,
+and it schedules those jobs onto your own solar — then explains the why and reminds you.
 
-### 1. The glance (Home screen)
-One screen that answers "is my home OK and what's it doing?" — a plain-language verdict
-("Running on free solar — sending 7.7 kW to the grid"), a live power-flow detail, a
-month-to-date money line ("on track to **earn** €15 this month"), and a tappable list of
-flexible devices. A **"Needs a look"** card appears only when something is genuinely wrong.
+### 1. Plan my day (the main screen)
+The hero surface. Pick energy-heavy tasks — charge the car, run the dishwasher / washing
+machine / dryer, a hot-water or heating boost — give each a "done by" time, and get a
+**schedule that runs them on as much solar as possible**. A timeline draws the day's solar
+curve with task blocks slotted under it, split-shaded by own-solar vs grid. Toggle
+**Cheapest / Greenest / Soonest**, nudge a block, or re-plan; a summary shows
+"% solar · € saved · kg CO₂". You can drive the whole thing **by voice** — hold the mic and
+say *"charge the car by 7am and run the dishwasher this afternoon"*: speech → text
+(ElevenLabs STT) → tasks (GPT-4o) → plan → a spoken summary back (ElevenLabs TTS).
 
-### 2. Plan my day (swipe right)
-Pick energy-heavy tasks (charge car, run dishwasher/washing machine/dryer, hot-water or
-heating boost), set a "done by" time for each, and get a **schedule that runs them on as much
-solar as possible**. A hero timeline draws the day's solar curve with task blocks slotted
-under it, split-shaded by how much of each run is your own solar vs grid. Toggle
-**Cheapest / Greenest / Soonest**, nudge a block, or re-plan. A summary chip shows
-"% solar · € saved · kg CO₂".
+### 2. Ask anything (grounded chat)
+A natural-language assistant that **only speaks numbers it computed**. It runs an OpenAI
+function-calling loop over the same planner tools the app uses, so "when should I run the
+dishwasher?" or "why is my bill so high?" are answered from live data — with the "why" backed
+by real **weather-normalised anomaly detection**: a winter **heat-pump fault** or a summer
+**solar-soiling** drop, detected from the telemetry, not guessed.
 
-### 3. Ask anything (grounded chat)
-A natural-language assistant that **only speaks numbers it computed**. It runs an
-OpenAI function-calling loop over the same planner tools the app uses, so "when should I run
-the dishwasher?" or "why is my heat-pump bill so high?" get answered from live data — and the
-heat-pump answer is backed by real **weather-normalised anomaly detection**, not a guess.
+### 3. The glance (Home)
+A calm one-screen status: a plain-language verdict ("Running on free solar — sending 7.7 kW
+to the grid"), a live power-flow detail, a month-to-date money line ("on track to **earn** €15
+this month"), and the flexible-device list — tap a device for an **interactive day-timeline**
+to pick when you're home, with a reminder for that slot. A **"Needs a look"** card appears only
+when something is genuinely wrong. (Present in the codebase; the current build leads with
+Plan-my-day.)
+
+A **Settings** screen switches the demo clock (live · sunny-summer · winter) and light/dark
+appearance, and shows the contract.
 
 ---
 
@@ -83,6 +92,8 @@ heat-pump answer is backed by real **weather-normalised anomaly detection**, not
   only mutable state is an in-memory committed-loads ledger.
 - **Tools own the numbers, the LLM owns the words.** Every figure the assistant says is the
   return value of a deterministic function call.
+- **Voice in, voice out.** Hold-to-talk → `POST /transcribe` (ElevenLabs STT) → `POST /plan_text`
+  (GPT-4o parses the sentence into real tasks → planner → ElevenLabs TTS spoken summary).
 - **Deploy is one push.** Push to `main` → GitHub Actions → SSH → build → restart systemd →
   smoke-test. iOS ships via TestFlight.
 
@@ -97,7 +108,8 @@ heat-pump answer is backed by real **weather-normalised anomaly detection**, not
 | Backend runtime | **Node.js 20+ · TypeScript 5.5** | CommonJS, compiled with `tsc`. |
 | Web framework | **Express 4** | Thin REST layer; endpoints map 1:1 to product surfaces. |
 | Tests | **`node:test`** (built-in) | Zero test dependencies; run with `npm test`. |
-| Assistant | **OpenAI Chat Completions API** (`gpt-4o`) | Function-calling loop over the planner tools. |
+| Assistant | **OpenAI Chat Completions API** (`gpt-4o`) | Function-calling loop over the planner tools; also parses voice/text into tasks. |
+| Voice | **ElevenLabs** (Scribe STT · Turbo v2.5 TTS) | Hold-to-talk planning: speech in, spoken summary out. iOS `AVAudioRecorder`/`AVAudioPlayer`. |
 | Data pipeline | **Python 3** | `scripts/transform_dataset.py`; pulls a real **Open-Meteo** Munich forecast. |
 | Hosting | **Ubuntu · systemd · nginx + Certbot (TLS)** | `getfletcher.ai`, backend bound to `127.0.0.1:8090`. |
 | CI/CD | **GitHub Actions** | `.github/workflows/deploy.yml` (backend), `deploy/testflight.sh` (iOS). |
@@ -116,19 +128,24 @@ Full inventory and rationale: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
 │   │   ├── server.ts          REST routes (the public API surface)
 │   │   ├── optimizeLoad.ts    single-load planner (source-first, 3 objectives, staggering)
 │   │   ├── planDay.ts         multi-task day planner (curve + savings)
-│   │   ├── anomaly.ts         weather-normalised heat-pump anomaly detection
+│   │   ├── anomaly.ts         weather-normalised heat-pump + solar-soiling anomaly detection
 │   │   ├── openaiChat.ts      grounded assistant (OpenAI tool-loop)
+│   │   ├── parseTasks.ts      sentence → structured tasks (GPT-4o, strict schema)
+│   │   ├── elevenlabs.ts      voice: speech-to-text (Scribe) + text-to-speech (Turbo)
 │   │   ├── money.ts           month-end bill / earnings forecast
 │   │   ├── devices.ts         flexible-device library + EV-from-charge-target
+│   │   ├── contract.ts        tariff / term / notice-deadline logic
 │   │   ├── ledger.ts          in-memory committed-loads ledger
 │   │   ├── views.ts           read models (snapshot, insights)
 │   │   ├── data.ts            dataset access + indexing
-│   │   ├── clock.ts           "now" resolution (live wall clock / fixed winter)
+│   │   ├── clock.ts           "now" resolution (live · sunny · winter demo clocks)
 │   │   └── *.test.ts          node:test suites
 │   └── package.json
 ├── ios/                       SwiftUI client  (see ios/README.md)
 │   ├── project.yml            XcodeGen spec
-│   └── Sources/*.swift
+│   └── Sources/               RootPager · PlanDayView · HomeView · ChatView · SettingsView
+│       │                      DeviceSheetView · FlowDetailView · ClockStore
+│       └── VoiceRecorder · AudioPlayer · NotificationManager · APIClient · Models · Theme
 ├── data/                      generated, demo-ready dataset  (see data/README.md)
 ├── enpal-track-dataset/       raw organizer dataset (never modified)
 ├── scripts/transform_dataset.py   raw → data/ pipeline
@@ -169,8 +186,10 @@ Dev loop (rebuild + restart on change):
 npm run dev
 ```
 
-The assistant endpoint (`POST /chat`) additionally needs `OPENAI_API_KEY` in the environment;
-every other endpoint works with no secrets. See [Configuration](#configuration).
+The LLM endpoints (`POST /chat`, `POST /plan_text`) need `OPENAI_API_KEY`, and the voice
+endpoints (`POST /transcribe` + the spoken summary) need `ELEVENLABS_API_KEY`. Every other
+endpoint — including the full planner and `plan_day` — works with no secrets. See
+[Configuration](#configuration).
 
 ### 2. Dataset
 
@@ -211,15 +230,20 @@ More: **[ios/README.md](ios/README.md)**.
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `PORT` | `8090` | HTTP port (bound to `127.0.0.1`). |
-| `OPENAI_API_KEY` | — | Required **only** for `POST /chat`. Without it, `/chat` returns `503`; everything else works. |
-| `OPENAI_MODEL` | `gpt-4o` | Model for the assistant. |
-| `DEMO_CLOCK` | `summer` | Default clock when a request omits `?clock=`. `summer` = live wall clock; `winter` = fixed scenario. |
-| `CHAT_TOKEN` | — | Optional shared secret; if set, `/chat` requires header `x-lumen-token`. |
+| `OPENAI_API_KEY` | — | Required for `POST /chat` and the task-parsing in `POST /plan_text`. Without it, those return `503`; the rest of the API works. |
+| `OPENAI_MODEL` | `gpt-4o` | Model for the assistant + task parsing. |
+| `ELEVENLABS_API_KEY` | — | Required for the voice endpoints (`POST /transcribe`, and the spoken summary in `POST /plan_text`). Planning by text still works without it. |
+| `ELEVENLABS_STT_MODEL` | `scribe_v1` | Speech-to-text model. |
+| `ELEVENLABS_TTS_MODEL` | `eleven_turbo_v2_5` | Text-to-speech model. |
+| `ELEVENLABS_VOICE_ID` | `21m00Tcm4TlvDq8ikWAM` (Rachel) | Spoken voice preset. |
+| `DEMO_CLOCK` | `summer` | Default clock when a request omits `?clock=`. |
+| `CHAT_TOKEN` | — | Optional shared secret; if set, `/chat` (and the voice endpoints) require header `x-lumen-token`. |
 
 ### Request parameters (all endpoints)
 
 - `?household=` — one of `HH-1001`…`HH-1004` (default `HH-1001`, the "hero" home).
-- `?clock=` — `summer` (live real time) or `winter` (fixed Jan morning for the anomaly demo).
+- `?clock=` — `summer` (live real time) · `sunny` (fixed Jun midday, solar-soiling demo) ·
+  `winter` (fixed Jan morning, heat-pump-anomaly demo).
 - `?at=` — ISO timestamp override for scripted demos/tests (bypasses the clock).
 
 ### iOS
