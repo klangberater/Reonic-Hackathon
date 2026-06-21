@@ -22,6 +22,9 @@ struct APIClient: Sendable {
     func money(household: String = Config.defaultHousehold, clock: DemoClock) async throws -> Money {
         try await get("/money", household: household, clock: clock)
     }
+    func contract(household: String = Config.defaultHousehold, clock: DemoClock) async throws -> Contract {
+        try await get("/contract", household: household, clock: clock)
+    }
     func devices(household: String = Config.defaultHousehold, clock: DemoClock) async throws -> [Device] {
         try await get("/devices", household: household, clock: clock)
     }

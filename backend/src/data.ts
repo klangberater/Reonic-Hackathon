@@ -40,12 +40,15 @@ export interface Household {
 
 export interface Contract {
     household_id: string;
+    customer_name: string;
+    provider: string;
     tariff_id: string;
     tariff_name: string;
     contract_start: string;
     contract_end: string;
     minimum_term_months: number;
     notice_period_weeks: number;
+    auto_renew_months: number;
     base_fee_eur_per_month: number;
     feed_in_eur_per_kwh: number;
     energy_pricing: { model: string; spot_adder_eur_per_kwh?: number; energy_rate_eur_per_kwh?: number };

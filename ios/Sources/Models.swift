@@ -155,3 +155,24 @@ func taskDisplayName(id: String, fallback: String) -> String {
 }
 extension Device { var displayName: String { taskDisplayName(id: id, fallback: name) } }
 extension PlanResult.PlannedTask { var displayName: String { taskDisplayName(id: device, fallback: name) } }
+
+// MARK: - /contract
+struct Contract: Decodable, Sendable {
+    let provider: String
+    let customerName: String
+    let tariffName: String
+    let tariffType: String
+    let baseFeeEurPerMonth: Double
+    let feedInEurPerKwh: Double
+    let spotAdderEurPerKwh: Double?
+    let contractStart: String
+    let contractEnd: String
+    let minimumTermMonths: Int
+    let noticePeriodWeeks: Int
+    let autoRenewMonths: Int
+    let noticeByDate: String           // YYYY-MM-DD
+    let daysUntilEnd: Int
+    let daysUntilNoticeDeadline: Int
+    let inNoticeWindow: Bool
+    let termsText: String
+}

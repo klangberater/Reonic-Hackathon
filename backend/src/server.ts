@@ -10,6 +10,7 @@ import { optimizeLoad } from "./optimizeLoad";
 import { moneyForecast } from "./money";
 import { commitmentsFor, addCommitment, clearCommitments } from "./ledger";
 import { snapshotFor, insightsFor } from "./views";
+import { contractSummary } from "./contract";
 import { runChat } from "./openaiChat";
 import { planDay, PlanTaskInput } from "./planDay";
 
@@ -45,6 +46,12 @@ app.get("/household", (req, res) => {
 // GET money — forecast
 app.get("/money", (req, res) => {
     try { res.json(moneyForecast(hid(req), resolveNow(clk(req), req.query.at as string))); }
+    catch (e: any) { res.status(400).json({ error: String(e.message || e) }); }
+});
+
+// GET contract — tariff, term, notice deadline, renewal + full terms text
+app.get("/contract", (req, res) => {
+    try { res.json(contractSummary(hid(req), resolveNow(clk(req), req.query.at as string))); }
     catch (e: any) { res.status(400).json({ error: String(e.message || e) }); }
 });
 
