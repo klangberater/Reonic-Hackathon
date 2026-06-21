@@ -6,11 +6,12 @@ REST/JSON API for the Lumen energy assistant. Implemented in `backend/src/server
 - **Base URL (production):** `https://getfletcher.ai/api` (nginx strips `/api/` → backend routes have no prefix)
 - **Base URL (local):** `http://127.0.0.1:8090`
 - **Content type:** `application/json`
-- **Auth:** none, except `POST /chat` when `CHAT_TOKEN` is configured (header `x-lumen-token`).
+- **Auth:** none, except the LLM/voice endpoints (`POST /chat`, `POST /transcribe`,
+  `POST /plan_text`) when `CHAT_TOKEN` is configured (header `x-lumen-token`).
 
-> **JSON casing.** Read models added first (`/now`, `/household`, `/devices`, `/insights`)
-> emit **snake_case**; the planner/money endpoints (`/money`, `/optimize_load`, `/plan_day`)
-> emit **camelCase** (raw TypeScript object keys). The iOS client decodes with
+> **JSON casing.** Read models (`/now`, `/household`, `/devices`, `/insights`) emit
+> **snake_case**; the planner/money/contract endpoints (`/money`, `/contract`, `/optimize_load`,
+> `/plan_day`) emit **camelCase** (raw TypeScript object keys). The iOS client decodes with
 > `convertFromSnakeCase`, which normalizes both. Shapes below show the actual wire keys.
 
 ## Common query parameters
@@ -18,7 +19,7 @@ REST/JSON API for the Lumen energy assistant. Implemented in `backend/src/server
 | Param | Applies to | Default | Meaning |
 |-------|-----------|---------|---------|
 | `household` | all | `HH-1001` | `HH-1001`…`HH-1004`. `HH-1001` (Familie Becker, Munich) is the hero home. |
-| `clock` | all | `summer` | `summer` = **live wall clock** (Europe/Berlin, snapped to 15 min, pinned to data year 2026); `winter` = fixed `2026-01-15T08:00` for the heat-pump-anomaly demo. |
+| `clock` | all | `summer` | `summer` = **live wall clock** (Europe/Berlin, snapped to 15 min, pinned to data year 2026); `summerday` = fixed `2026-06-20T11:00` (solar-soiling demo; "Sunny demo" in the app); `winter` = fixed `2026-01-15T08:00` (heat-pump-anomaly demo). Any unknown value falls back to live. |
 | `at` | all | — | ISO timestamp override (e.g. `2026-06-20T13:00:00`); bypasses `clock`. For scripted demos/tests. |
 
 On `GET`, params go in the query string; on `POST`, they may also be in the JSON body.
@@ -33,14 +34,17 @@ On `GET`, params go in the query string; on `POST`, they may also be in the JSON
 | GET | `/now` (alias `/state`) | The glance snapshot. |
 | GET | `/household` | Asset profile + tariff. |
 | GET | `/money` | Month-end bill / earnings forecast. |
+| GET | `/contract` | Tariff, term dates, notice deadline, renewal + full terms text. |
 | GET | `/devices` | Flexible devices + scheduled status. |
 | GET | `/optimize_load` | Best window for one device (+ ribbon, per-hour slots, rationale). |
 | POST | `/commit_load` | Add a load to the ledger. |
 | GET | `/commitments` | List committed loads. |
 | POST | `/reset` | Clear a household's ledger. |
-| GET | `/insights` | Health + anomalies/nudges. |
+| GET | `/insights` | Health + anomalies/nudges (heat-pump & solar). |
 | POST | `/plan_day` | Schedule several tasks at once (the "Plan my day" engine). |
 | POST | `/chat` | Grounded natural-language assistant. |
+| POST | `/transcribe` | Voice clip (base64) → text (ElevenLabs STT). |
+| POST | `/plan_text` | Sentence → tasks → plan → spoken summary (voice / text planning). |
 
 ---
 
@@ -104,6 +108,28 @@ and `projectedTotalEur` is a credit, not a cost.**
 ```
 
 In summer the hero home is net-positive (e.g. `projectedTotalEur` negative, `earning: true`).
+
+---
+
+### GET `/contract`
+
+Parsed tariff + term intelligence (for "is this still a good deal?" and contract Q&A). Dates
+are computed against the resolved `clock`. `inNoticeWindow` is `true` once within the notice
+period before the term ends.
+
+```jsonc
+{
+  "provider": "Enpal", "customerName": "Familie Becker",
+  "tariffId": "dynamic", "tariffName": "Enpal FlexStrom Dynamic", "tariffType": "dynamic_hourly",
+  "pricingModel": "dynamic_hourly", "baseFeeEurPerMonth": 12.9, "feedInEurPerKwh": 0.081,
+  "spotAdderEurPerKwh": 0.119,
+  "contractStart": "2025-03-19", "contractEnd": "2027-03-19",
+  "minimumTermMonths": 24, "noticePeriodWeeks": 6, "autoRenewMonths": 12,
+  "noticeByDate": "2027-02-05", "daysUntilEnd": 271, "daysUntilNoticeDeadline": 229,
+  "inNoticeWindow": false,
+  "termsText": "This agreement between Enpal B.V. and Familie Becker commences on 2025-03-19 …"
+}
+```
 
 ---
 
@@ -184,9 +210,11 @@ Clear a household's ledger (used between demo runs). Body `{ household? }` → `
 
 ### GET `/insights`
 
-Live health + proactive cards. The anomaly is computed and weather-normalised (`anomaly.ts`);
+Live health + proactive cards. Anomalies are computed and weather-normalised (`anomaly.ts`) —
+a **heat-pump** over-consumption (winter) or a **solar-soiling** under-production (summer);
 the nudge (cheapest hour) and highest-bill note are live aggregations. `health` is `alert`
-only when an active high-severity anomaly exists.
+only when an active high-severity anomaly exists. Anomaly events carry a `subject`
+(`"heatpump"` | `"solar"`) that seeds the app's "ask why" chat.
 
 ```jsonc
 {
@@ -195,6 +223,7 @@ only when an active high-severity anomaly exists.
     {
       "type": "anomaly",                   // anomaly | nudge | insight
       "severity": "high",                  // high | info
+      "subject": "heatpump",               // heatpump | solar  (anomalies only)
       "period": "2026-01-12..2026-01-14",
       "title": "Heat pump using ~64% more than usual",
       "detail": "Heat-pump electricity is ~64% above what these temperatures normally need (2.2 kW vs ~1.4 kW), sustained 3 days.",
@@ -204,6 +233,9 @@ only when an active high-severity anomaly exists.
   ]
 }
 ```
+
+The summer solar-soiling anomaly (`clock=summerday`) looks the same with
+`subject: "solar"`, e.g. *"Solar output ~55% below normal"*.
 
 ---
 
@@ -261,9 +293,50 @@ every figure is computed, not generated. Requires `OPENAI_API_KEY` server-side (
   "toolsUsed": ["optimize_load"] }
 ```
 
-Available tools the model may call: `get_now`, `get_money`, `get_household`, `get_devices`,
-`get_insights`, `list_commitments`, `optimize_load`, `explain_anomaly`. See
+Available tools the model may call: `get_now`, `get_money`, `get_household`, `get_contract`,
+`get_devices`, `get_insights`, `list_commitments`, `optimize_load`, `explain_anomaly`,
+`explain_solar_anomaly`. See
 [ARCHITECTURE.md → Grounded assistant](ARCHITECTURE.md#grounded-assistant-openaichattts).
+
+---
+
+### POST `/transcribe`
+
+Speech-to-text for the voice planner. Send a base64-encoded audio clip; get the transcript
+back. Requires `ELEVENLABS_API_KEY` server-side (else `503`). Gated by `x-lumen-token` if
+`CHAT_TOKEN` is set.
+
+**Body:** `{ household?, audioBase64, mime? }` — `mime` defaults to `audio/m4a`.
+
+```jsonc
+// response
+{ "text": "charge the car by 7am and run the dishwasher this afternoon" }
+```
+
+---
+
+### POST `/plan_text`
+
+The full voice/text planning pipeline: a sentence → structured tasks (GPT-4o) → `plan_day` →
+a spoken one-line summary (ElevenLabs TTS, mp3 base64). Powers the hold-to-talk loop and the
+typed fallback. Needs `OPENAI_API_KEY` (parsing) and `ELEVENLABS_API_KEY` (speech).
+
+**Body:** `{ household?, clock?, at?, mode?, text }` — `mode` ∈ `cheapest | greenest | soonest`
+(default `cheapest`).
+
+```jsonc
+// response
+{
+  "tasks": [ { "device": "ev", "deadline": "2026-06-21T07:00:00", "target": 80 }, … ],
+  "notes": "…optional parser notes…",
+  "plan":  { /* a full /plan_day result: curve, tasks, solarSharePct, savedEur, savedCo2Kg */ },
+  "spokenLine": "All done on sunshine — €0.40 instead of €4.10, 92% on your own power.",
+  "speechBase64": "<mp3 bytes, base64>"
+}
+```
+
+Errors: `400 {error:"text required"}`; `422 {error:"I couldn't spot anything to schedule…"}`
+when no device is recognised in the sentence; `503` if a required key is missing.
 
 ---
 
@@ -274,12 +347,19 @@ api=https://getfletcher.ai/api            # or http://127.0.0.1:8090
 
 curl -s "$api/health"
 curl -s "$api/now?household=HH-1001&clock=summer"
+curl -s "$api/contract?household=HH-1001"
+curl -s "$api/insights?household=HH-1001&clock=summerday"     # solar-soiling anomaly
 curl -s "$api/optimize_load?household=HH-1001&device=ev&clock=winter"
 
 curl -s -X POST "$api/plan_day" -H 'content-type: application/json' -d '{
   "household":"HH-1001","clock":"summer","mode":"cheapest",
   "tasks":[{"device":"ev","deadline":"2026-06-21T07:00:00","target":80},
            {"device":"dishwasher","deadline":"2026-06-20T20:00:00"}]}'
+
+# Plan from natural language (typed fallback for the voice loop)
+curl -s -X POST "$api/plan_text" -H 'content-type: application/json' -d '{
+  "household":"HH-1001","clock":"summerday",
+  "text":"charge the car by 7am and run the dishwasher this afternoon"}'
 
 curl -s -X POST "$api/chat" -H 'content-type: application/json' -d '{
   "household":"HH-1001","clock":"winter","message":"Why is my heat-pump bill so high?"}'

@@ -242,8 +242,8 @@ More: **[ios/README.md](ios/README.md)**.
 ### Request parameters (all endpoints)
 
 - `?household=` — one of `HH-1001`…`HH-1004` (default `HH-1001`, the "hero" home).
-- `?clock=` — `summer` (live real time) · `sunny` (fixed Jun midday, solar-soiling demo) ·
-  `winter` (fixed Jan morning, heat-pump-anomaly demo).
+- `?clock=` — `summer` (live real time) · `summerday` (fixed Jun 20 midday, solar-soiling demo;
+  "Sunny demo" in the app) · `winter` (fixed Jan 15 morning, heat-pump-anomaly demo).
 - `?at=` — ISO timestamp override for scripted demos/tests (bypasses the clock).
 
 ### iOS
