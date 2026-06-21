@@ -1,6 +1,12 @@
 import Foundation
 import UserNotifications
 
+/// Where a tapped notification should take the user. PlanDayView observes `pending` and acts on it.
+final class AppRouter: ObservableObject {
+    static let shared = AppRouter()
+    @Published var pending: String?   // "plan" | "anomaly"
+}
+
 enum NotificationManager {
     struct Reminder { let id: String; let title: String; let body: String; let fireAt: Date }
 
@@ -56,6 +62,66 @@ enum NotificationManager {
                 dateMatching: cal.dateComponents([.year, .month, .day, .hour, .minute, .second], from: fire),
                 repeats: false)
             center.add(UNNotificationRequest(identifier: "lumen-\(deviceName)-\(hour)", content: content, trigger: trigger))
+        }
+    }
+
+    // MARK: - Morning briefing
+
+    private static let briefingId = "lumen-morning-briefing"
+
+    /// Show banners even while the app is foregrounded — otherwise the "Preview" button looks
+    /// like it does nothing in the demo (iOS suppresses foreground banners by default).
+    private final class ForegroundPresenter: NSObject, UNUserNotificationCenterDelegate {
+        func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                    willPresent notification: UNNotification,
+                                    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+            completionHandler([.banner, .sound])
+        }
+        // Tapping the briefing deep-links into the app (build the plan, or open the assistant).
+        func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                    didReceive response: UNNotificationResponse,
+                                    withCompletionHandler completionHandler: @escaping () -> Void) {
+            let route = response.notification.request.content.userInfo["route"] as? String
+            DispatchQueue.main.async { AppRouter.shared.pending = route }
+            completionHandler()
+        }
+    }
+    private static let presenter = ForegroundPresenter()
+
+    /// Call once at launch so foreground notifications present as banners.
+    static func configure() { UNUserNotificationCenter.current().delegate = presenter }
+
+    /// Daily morning briefing — a repeating local notification at the user's chosen time.
+    static func scheduleMorningBriefing(hour: Int, minute: Int, title: String, body: String, route: String) {
+        let center = UNUserNotificationCenter.current()
+        center.delegate = presenter
+        center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            guard granted else { return }
+            center.removePendingNotificationRequests(withIdentifiers: [briefingId])
+            let content = UNMutableNotificationContent()
+            content.title = title; content.body = body; content.sound = .default
+            content.userInfo = ["route": route]
+            var comps = DateComponents(); comps.hour = hour; comps.minute = minute
+            let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: true)
+            center.add(UNNotificationRequest(identifier: briefingId, content: content, trigger: trigger))
+        }
+    }
+
+    static func cancelMorningBriefing() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [briefingId])
+    }
+
+    /// Fire the briefing right now — lets the demo show it without waiting until 7am.
+    static func previewBriefing(title: String, body: String, route: String) {
+        let center = UNUserNotificationCenter.current()
+        center.delegate = presenter
+        center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            guard granted else { return }
+            let content = UNMutableNotificationContent()
+            content.title = title; content.body = body; content.sound = .default
+            content.userInfo = ["route": route]
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1.5, repeats: false)
+            center.add(UNNotificationRequest(identifier: "lumen-briefing-preview", content: content, trigger: trigger))
         }
     }
 }

@@ -4,6 +4,8 @@ import SwiftUI
 struct LumenApp: App {
     @AppStorage("appearance") private var appearance = "dark"
 
+    init() { NotificationManager.configure() }
+
     var body: some Scene {
         WindowGroup {
             RootPager()

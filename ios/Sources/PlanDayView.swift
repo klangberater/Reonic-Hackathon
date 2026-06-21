@@ -10,10 +10,12 @@ struct ChatSeed: Identifiable {
 struct PlanDayView: View {
     @StateObject private var vm: PlanDayViewModel
     @ObservedObject private var clockStore: ClockStore
+    @ObservedObject private var router = AppRouter.shared
     @StateObject private var voice = VoiceRecorder()
     @State private var selectedBlock: String?
     @State private var showSettings = false
     @State private var showFlow = false
+    @State private var showBriefing = false
     @State private var chatSeed: ChatSeed?
     @State private var typed = ""
     @FocusState private var typingFocused: Bool
@@ -37,6 +39,40 @@ struct PlanDayView: View {
         .sheet(isPresented: $showSettings) { SettingsView(clock: clockStore).presentationDetents([.medium]) }
         .sheet(isPresented: $showFlow) { if let s = vm.state { FlowDetailView(state: s, money: vm.money) } }
         .sheet(item: $chatSeed) { seed in ChatView(clock: vm.clock, opener: seed.opener) }
+        .sheet(isPresented: $showBriefing) {
+            BriefingView(clock: clockStore.clock,
+                         onPlan: { Task { await vm.recommendDay() } },
+                         onAsk: { askAboutAnomaly() })
+        }
+        .onAppear { handleRoute(router.pending) }
+        .onChange(of: router.pending) { _, r in handleRoute(r) }
+    }
+
+    /// React to a tapped morning briefing: build today's plan, or open the assistant on the anomaly.
+    /// If the tap came from the Settings "Preview" button, close that sheet first — otherwise the
+    /// new screen/sheet would be stuck behind it and look like nothing happened.
+    private func handleRoute(_ route: String?) {
+        guard let route else { return }
+        router.pending = nil
+        let wasPresenting = showSettings || chatSeed != nil
+        showSettings = false
+
+        let act = {
+            switch route {
+            case "briefing": showBriefing = true
+            case "anomaly":
+                if vm.activeAnomaly != nil { askAboutAnomaly() }
+                else { Task { await vm.loadDevices(); askAboutAnomaly() } }
+            case "plan":
+                Task { await vm.recommendDay() }
+            default: break
+            }
+        }
+        if wasPresenting {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { act() }
+        } else {
+            act()
+        }
     }
 
     // Verdict: small, informative line (tap for the live flow) — same as Home.
