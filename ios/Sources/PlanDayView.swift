@@ -68,14 +68,33 @@ struct PlanDayView: View {
         }
     }
 
-    private var statusChip: some View {
-        let alert = vm.activeAnomaly != nil
-        return HStack(spacing: 6) {
+    // Health pill. When there's a live anomaly it turns red and is tappable → the assistant
+    // explains the cause (the detail lives in the chat, not a separate card).
+    @ViewBuilder private var statusChip: some View {
+        if vm.activeAnomaly != nil {
+            Button { askAboutAnomaly() } label: { chipBody(alert: true) }.buttonStyle(.plain)
+        } else {
+            chipBody(alert: false)
+        }
+    }
+
+    private func chipBody(alert: Bool) -> some View {
+        HStack(spacing: 6) {
             Circle().fill(alert ? Theme.red : Theme.green).frame(width: 8, height: 8)
             Text(alert ? "Attention" : "All good").font(.caption.weight(.medium)).foregroundStyle(alert ? Theme.red : Theme.green)
+            if alert { Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).foregroundStyle(Theme.red) }
         }
         .padding(.horizontal, 11).padding(.vertical, 7)
         .background(alert ? Theme.redSoft : Theme.greenSoft, in: Capsule())
+    }
+
+    /// Open the assistant seeded with the causal "why" for the active anomaly.
+    private func askAboutAnomaly() {
+        guard let a = vm.activeAnomaly else { return }
+        chatSeed = a.subject == "solar"
+            ? "Why is my solar generating less than it should?"
+            : "Why is my heat pump using so much?"
+        showChat = true
     }
 
     // MARK: Voice — the conversational entry (top of the Plan screen)
@@ -212,42 +231,11 @@ struct PlanDayView: View {
                 }
                 if let e = vm.errorText { Text(e).font(.footnote).foregroundStyle(Theme.red) }
                 makeButton
-                anomalyCard
             }
             .padding(20)
         }
     }
 
-    // Surfaced below "Make my plan" when the home has a live anomaly (e.g. the heat-pump fault).
-    // Tap → opens the assistant seeded with the causal "why" question.
-    @ViewBuilder private var anomalyCard: some View {
-        if let a = vm.activeAnomaly {
-            Button {
-                chatSeed = a.subject == "solar"
-                    ? "Why is my solar generating less than it should?"
-                    : "Why is my heat pump using so much?"
-                showChat = true
-            } label: {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("Needs a look", systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption.bold()).foregroundStyle(Theme.red)
-                    Text(a.title).font(.system(.headline)).foregroundStyle(Theme.ink)
-                    Text(a.detail).font(.subheadline).foregroundStyle(Theme.subtle)
-                        .fixedSize(horizontal: false, vertical: true)
-                    HStack(spacing: 6) {
-                        Text(a.suggestedAction).font(.footnote.weight(.medium)).foregroundStyle(Theme.red)
-                        Spacer(minLength: 4)
-                        Text("Ask why").font(.footnote.weight(.semibold)).foregroundStyle(Theme.red)
-                        Image(systemName: "sparkles").font(.caption2).foregroundStyle(Theme.red)
-                    }
-                }
-                .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-                .background(Theme.redSoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.red.opacity(0.35), lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-        }
-    }
 
     private func taskRow(_ d: Device) -> some View {
         VStack(alignment: .leading, spacing: 10) {
