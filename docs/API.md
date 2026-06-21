@@ -268,12 +268,14 @@ Per-task fields: `device` (required), `deadline` (ISO), `target` (EV charge %, 2
   "tasks": [
     { "device": "dishwasher", "name": "Dishwasher", "icon": "bowl",
       "start": "2026-06-20T13:00:00", "startHour": 13, "window": "13:00–15:00",
-      "durationHours": 2, "source": "free", "ownSharePct": 100, "gridCostEur": 0,
-      "controllable": false }
+      "durationHours": 2, "source": "free", "ownSource": "solar",
+      "ownSharePct": 100, "gridCostEur": 0, "controllable": false }
   ]
 }
 ```
-`savedEur` / `savedCo2Kg` are vs. a "run it last-minute, finishing at the deadline" baseline.
+`source` is the cost story (`free | partial | paid`); `ownSource` is where the home's *own*
+energy in that window comes from (`solar | battery | mixed | grid`). `savedEur` / `savedCo2Kg`
+are vs. a "run it last-minute, finishing at the deadline" baseline.
 Errors: `400 {error:"tasks required"}` (empty tasks), `400 {error:"bad mode"}`.
 
 ---
