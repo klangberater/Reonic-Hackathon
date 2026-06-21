@@ -31,12 +31,13 @@ Slide-by-slide with talk track. **ON SLIDE** = what's projected (sparse). **SAY*
 4. Right tariff / contract? — yearly
 **SAY:** "Why is that seat empty? Because everyone optimised for the wrong job. A solar homeowner has four jobs. The top one — **every single day** — is *'when do I run things to use my own sunshine?'* Then occasionally, *'is it still working?'* Rarely but expensively, *'is something broken?'* And once a year, *'am I on the right tariff?'* Dashboards serve job two — monitoring — and here's the killer: engagement in those apps **drops sixty percent in the first month.** People don't want to watch charts. They want the *daily* job done."
 
-## 6 · So the daily job IS the home screen (2:55–3:10)
-**ON SLIDE:** the Lumen home screen.
-**SAY:** "So we built the app around the daily job. The home screen isn't a dashboard — it's *'tell me your day, I'll plan it around your sun.'* The rarer jobs surface themselves, only when they matter. Let me show you."
+## 6 · So the daily job IS the home screen — and it comes to you (2:55–3:15)
+**ON SLIDE:** the Lumen home screen + the 7am briefing notification.
+**SAY:** "So we built the app around the daily job. The home screen isn't a dashboard — it's *'tell me your day, I'll plan it around your sun.'* And because people stop opening apps, it **comes to you**: every morning a briefing with your solar outlook, the cheapest window, and anything that needs attention — one tap to plan the day or fix the problem. The rarer jobs surface themselves. Let me show you."
 
 ## 7 · Demo (3:10–5:10 — run ~2:00 live)
 *Switch to the live app (Sunny demo / Live clock). Follow the runsheet; exact numbers in `video-script.md`.*
+- **(Optional opener) The 7am briefing:** Settings → "Preview now" → the briefing popup — solar curve, cheapest window, earnings, and any alert — with **"Plan my day"** right there. "This is what arrives before you've opened anything."
 - **Voice plan:** "Charge the car by tomorrow morning, and run a load of washing" → spoken *"Planned for the day — €2.72 instead of €13.20, 69% on your own power."* Show the timetable (free midday solar, car across the peak). **Let the spoken reply land.**
 - **The plan:** agenda rail, source traffic light (green = your own power), one nudge.
 - **The twist (job 3 surfaces itself):** tap the red **"Attention"** chip → the assistant leads with the facts: *"Solar ~55% below normal — 21 vs ~48 kWh/day, 4 days — likely dirt or shading."* It caught *why* today wasn't all-solar.
