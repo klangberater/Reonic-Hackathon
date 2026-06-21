@@ -16,9 +16,14 @@ const RECENCY_DAYS = 3;       // the run must still be live (ends within N days 
 const TEMP_BUCKET_C = 2;      // baseline resolution
 const MIN_EXPECTED_KWH = 5;   // ignore shoulder/summer days where the pump barely runs
 
+// Solar (PV-soiling) detection — the mirror image: a sustained SHORTFALL on sunny days.
+const SOLAR_SHORTFALL_FACTOR = 0.7;  // a day is anomalous at <70% of weather-expected yield
+const MIN_EXPECTED_PV_KWH = 20;      // only flag real-sun days (skip dim/winter days)
+
 interface DayAgg {
     date: string;             // YYYY-MM-DD
     hpKwh: number;
+    pvKwh: number;
     houseKwh: number;
     meanTempC: number;
 }
@@ -39,28 +44,29 @@ const _dayCache = new Map<string, DayAgg[]>();
 function dailyAggregates(id: string): DayAgg[] {
     let days = _dayCache.get(id);
     if (days) return days;
-    const byDate = new Map<string, { hp: number; house: number; temps: number[] }>();
+    const byDate = new Map<string, { hp: number; pv: number; house: number; temps: number[] }>();
     for (const r of recordsArray(id)) {
         const d = r.timestamp.slice(0, 10);
         let a = byDate.get(d);
-        if (!a) { a = { hp: 0, house: 0, temps: [] }; byDate.set(d, a); }
+        if (!a) { a = { hp: 0, pv: 0, house: 0, temps: [] }; byDate.set(d, a); }
         a.hp += r.heatpump_kw * SLOT_HOURS;
+        a.pv += r.pv_production_kw * SLOT_HOURS;
         a.house += r.house_load_kw * SLOT_HOURS;
         a.temps.push(r.outdoor_temp_c);
     }
     days = [...byDate.entries()]
-        .map(([date, a]) => ({ date, hpKwh: a.hp, houseKwh: a.house, meanTempC: mean(a.temps) }))
+        .map(([date, a]) => ({ date, hpKwh: a.hp, pvKwh: a.pv, houseKwh: a.house, meanTempC: mean(a.temps) }))
         .sort((x, y) => x.date.localeCompare(y.date));
     _dayCache.set(id, days);
     return days;
 }
 
-/** Expected daily heat-pump kWh as a function of mean outdoor temp, learnt from the home itself. */
-function tempBaseline(days: DayAgg[]): (t: number) => number {
+/** Expected daily kWh of `value` as a function of mean outdoor temp, learnt from the home itself. */
+function tempBaseline(days: DayAgg[], value: (d: DayAgg) => number): (t: number) => number {
     const buckets = new Map<number, number[]>();
     for (const d of days) {
         const b = Math.floor(d.meanTempC / TEMP_BUCKET_C) * TEMP_BUCKET_C;
-        (buckets.get(b) ?? buckets.set(b, []).get(b)!).push(d.hpKwh);
+        (buckets.get(b) ?? buckets.set(b, []).get(b)!).push(value(d));
     }
     // Median per bucket → robust: a single bad week can't move the baseline.
     const med = new Map<number, number>();
@@ -86,7 +92,7 @@ export function detectHeatpumpAnomaly(id: string, nowISO: string): AnomalyEviden
     if (!household(id).heat_pump) return null;
 
     const days = dailyAggregates(id);
-    const baseline = tempBaseline(days);
+    const baseline = tempBaseline(days, (d) => d.hpKwh);
     const houseMedian = median(days.map((d) => d.houseKwh));
 
     const nowDate = nowISO.slice(0, 10);
@@ -125,6 +131,63 @@ export function detectHeatpumpAnomaly(id: string, nowISO: string): AnomalyEviden
         tempRangeC: [round(Math.min(...temps), 1), round(Math.max(...temps), 1)],
         otherLoadsNormal,
         detail: `Heat-pump electricity is ~${Math.round(pctOver)}% above what these temperatures normally need (${round(observedKwh / 24, 1)} kW vs ~${round(expectedKwh / 24, 1)} kW), sustained ${run.length} days.`,
+    };
+}
+
+/** One structured, prose-free finding for an under-performing-solar (soiling) run. */
+export interface SolarAnomalyEvidence {
+    period: string;            // "YYYY-MM-DD..YYYY-MM-DD"
+    days: number;
+    observedDailyKwh: number;  // mean PV yield over the run
+    expectedDailyKwh: number;  // weather-expected yield on comparably sunny days
+    pctUnder: number;
+    tempRangeC: [number, number];
+    detail: string;            // deterministic one-liner for the card (no LLM needed)
+}
+
+/**
+ * Find a sustained, still-active solar SHORTFALL as of `nowISO` — the soiling/shading mirror of
+ * the heat-pump detector. Weather-normalises daily PV yield against the home's OWN history at the
+ * same temperatures, so a genuinely cloudy stretch reads differently from dirty panels.
+ */
+export function detectSolarAnomaly(id: string, nowISO: string): SolarAnomalyEvidence | null {
+    if (!(household(id).pv_kwp > 0)) return null;
+
+    const days = dailyAggregates(id);
+    const baseline = tempBaseline(days, (d) => d.pvKwh);
+
+    const nowDate = nowISO.slice(0, 10);
+    const recent = days.filter((d) => d.date < nowDate).slice(-WINDOW_DAYS);
+    if (recent.length < MIN_RUN_DAYS) return null;
+
+    const flagged = recent.map((d) => {
+        const exp = baseline(d.meanTempC);
+        return { ...d, exp, anomalous: exp >= MIN_EXPECTED_PV_KWH && d.pvKwh < exp * SOLAR_SHORTFALL_FACTOR };
+    });
+
+    let end = flagged.length - 1;
+    while (end >= 0 && !flagged[end].anomalous) end--;
+    if (end < 0) return null;
+    let start = end;
+    while (start - 1 >= 0 && flagged[start - 1].anomalous) start--;
+
+    const run = flagged.slice(start, end + 1);
+    if (run.length < MIN_RUN_DAYS) return null;
+    if (daysBetween(run[run.length - 1].date, nowDate) > RECENCY_DAYS) return null; // stale
+
+    const observed = mean(run.map((d) => d.pvKwh));
+    const expected = mean(run.map((d) => d.exp));
+    const pctUnder = (1 - observed / expected) * 100;
+    const temps = run.map((d) => d.meanTempC);
+
+    return {
+        period: `${run[0].date}..${run[run.length - 1].date}`,
+        days: run.length,
+        observedDailyKwh: round(observed, 1),
+        expectedDailyKwh: round(expected, 1),
+        pctUnder: round(pctUnder, 0),
+        tempRangeC: [round(Math.min(...temps), 1), round(Math.max(...temps), 1)],
+        detail: `Solar is generating ~${Math.round(pctUnder)}% less than these sunny days normally yield (${Math.round(observed)} kWh/day vs ~${Math.round(expected)}), sustained ${run.length} days.`,
     };
 }
 

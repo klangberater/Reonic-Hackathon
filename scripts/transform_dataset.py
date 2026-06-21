@@ -38,6 +38,13 @@ ANOMALY_START = "2026-01-12"
 ANOMALY_END = "2026-01-19"
 ANOMALY_MULT = 1.6
 
+# Summer PV-soiling anomaly for HH-1001: dirty panels under-generate on sunny days, sustained
+# across the demo weekend (2026-06-20/21) so the live detector flags it on the summer clocks.
+SOIL_HH = "HH-1001"
+SOIL_START = "2026-06-15"
+SOIL_END = "2026-06-24"
+SOIL_MULT = 0.6  # ~40% below clean-panel yield
+
 
 def shift_year(ts: str) -> str:
     """'2025-06-20T13:00:00' -> '2026-06-20T13:00:00' (handles Feb 29 safely: none in 2025)."""
@@ -168,6 +175,9 @@ def transform_household(hh, contracts_by_id, forecast):
         house = r["house_load_kw"]
         ev = r["ev_charging_kw"]
         pv = r["pv_production_kw"]
+        # Summer soiling: dirty panels generate less than they should on otherwise-sunny days.
+        if hid == SOIL_HH and SOIL_START <= ts[:10] <= SOIL_END:
+            pv = round(pv * SOIL_MULT, 3)
         cons = round(house + hp + ev, 3)
 
         charge, discharge, imp, exp, soc = dispatch_step(pv, cons, soc, cap, pmax)

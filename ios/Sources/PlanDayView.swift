@@ -223,7 +223,9 @@ struct PlanDayView: View {
     @ViewBuilder private var anomalyCard: some View {
         if let a = vm.activeAnomaly {
             Button {
-                chatSeed = "Why is my heat pump using so much?"
+                chatSeed = a.subject == "solar"
+                    ? "Why is my solar generating less than it should?"
+                    : "Why is my heat pump using so much?"
                 showChat = true
             } label: {
                 VStack(alignment: .leading, spacing: 8) {

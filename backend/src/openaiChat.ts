@@ -11,7 +11,7 @@ import { moneyForecast } from "./money";
 import { commitmentsFor } from "./ledger";
 import { snapshotFor, insightsFor as insightsBundle } from "./views";
 import { contractSummary } from "./contract";
-import { detectHeatpumpAnomaly } from "./anomaly";
+import { detectHeatpumpAnomaly, detectSolarAnomaly } from "./anomaly";
 
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
 const MAX_TURNS = 6;
@@ -30,6 +30,7 @@ const TOOLS = [
         deadline: { type: "string", description: "optional ISO timestamp the run must finish by" },
     }, ["device"]),
     fn("explain_anomaly", "Weather-normalised evidence for a heat-pump anomaly: observed vs temperature-expected draw, % over, days, temp range, and whether other loads are normal. Call this for any 'why is my heat pump / bill so high' question. Returns null if nothing is wrong.", {}),
+    fn("explain_solar_anomaly", "Weather-normalised evidence for an under-performing-solar (soiling) run: observed vs expected daily PV yield on comparably sunny days, % under, days, temp range. Call this for any 'why is my solar / PV so low / not generating / underperforming' question. Returns null if generation is normal.", {}),
     fn("get_contract", "The energy contract: tariff name/type, feed-in rate, monthly base fee, spot adder, start/end dates, minimum term, notice period, the computed notice deadline (noticeByDate) and days remaining, auto-renewal months, and the full terms text. Use for any question about the contract, tariff, switching, cancelling, renewal, or when notice must be given.", {}),
 ];
 
@@ -56,6 +57,7 @@ function systemPrompt(householdId: string, nowISO: string, clock: string): strin
         `- To answer "when should I run X" or "is now a good time", call optimize_load for that device.`,
         `- For contract / tariff / switching / cancelling / renewal / "when does my contract end" / "when must I give notice" questions, call get_contract. State the notice deadline (noticeByDate) plainly and warn that missing it auto-renews for autoRenewMonths months.`,
         `- For "why is my heat pump / bill so high" or anything about a fault, call explain_anomaly. The evidence is weather-normalised: if observed draw far exceeds the temperature-expected draw, the cold does NOT explain it — say so plainly, then name the likely cause (defrost fault, low refrigerant, or thermostat misconfiguration) and suggest a service check. If other loads are normal, point out the excess is isolated to the heat pump. Never blame the weather when the evidence rules it out.`,
+        `- For "why is my solar / PV so low / not generating / underperforming" or anything about reduced generation, call explain_solar_anomaly. The evidence is weather-normalised: if generation sits well below the expected yield for these sunny days, clouds do NOT explain it — say so, then name the likely cause (panel soiling/dirt, new shading, or a string/inverter fault) and suggest a panel clean or inspection. Lead with the numbers (observed vs expected kWh/day, % under).`,
         `- Keep answers to 1–3 short sentences, warm and concrete. No JSON, no jargon, no markdown tables.`,
     ].join("\n");
 }
@@ -70,6 +72,7 @@ function makeExecutor(householdId: string, nowISO: string) {
             case "get_insights": return insightsBundle(householdId, nowISO);
             case "list_commitments": return commitmentsFor(householdId);
             case "explain_anomaly": return detectHeatpumpAnomaly(householdId, nowISO) ?? { anomaly: null, note: "No active anomaly — the heat pump is tracking the weather normally." };
+            case "explain_solar_anomaly": return detectSolarAnomaly(householdId, nowISO) ?? { anomaly: null, note: "No active solar anomaly — generation is tracking the weather normally." };
             case "get_contract": return contractSummary(householdId, nowISO);
             case "optimize_load": {
                 try { return optimizeLoad(householdId, deviceById(householdId, String(args.device)), nowISO, args.deadline); }

@@ -1,10 +1,11 @@
 /** Shared read-models used by both the REST handlers and the chat tool-loop. */
 import { recordAt, recordsArray, household, billsFor } from "./data";
-import { detectHeatpumpAnomaly } from "./anomaly";
+import { detectHeatpumpAnomaly, detectSolarAnomaly } from "./anomaly";
 
 interface InsightEvent {
     type: string; severity: string; period: string;
     title: string; detail: string; suggested_action: string; active: boolean;
+    subject?: string;   // for anomalies: "heatpump" | "solar" — drives the app's "ask why" seed
 }
 
 export function snapshotFor(id: string, at: string) {
@@ -40,6 +41,19 @@ export function insightsFor(id: string, at: string) {
             detail: anomaly.detail,
             suggested_action: "Check heat pump settings / book a service inspection.",
             active: true, // detection only returns a still-active run
+            subject: "heatpump",
+        });
+    }
+
+    const solar = detectSolarAnomaly(id, at);
+    if (solar) {
+        events.push({
+            type: "anomaly", severity: "high", period: solar.period,
+            title: `Solar output ~${Math.round(solar.pctUnder)}% below normal`,
+            detail: solar.detail,
+            suggested_action: "Check the panels for dirt/soiling or shading — book a clean or inspection.",
+            active: true,
+            subject: "solar",
         });
     }
 

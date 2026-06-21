@@ -68,14 +68,14 @@
     "household_id": "HH-1001",
     "month": "2026-06",
     "consumption_kwh": 644.5,
-    "pv_production_kwh": 1495.2,
-    "grid_import_kwh": 169.9,
-    "grid_export_kwh": 1019.5,
-    "energy_cost_eur": 58.1,
+    "pv_production_kwh": 1305.9,
+    "grid_import_kwh": 178.7,
+    "grid_export_kwh": 838.9,
+    "energy_cost_eur": 61.35,
     "base_fee_eur": 12.9,
-    "feed_in_credit_eur": 82.58,
-    "total_bill_eur": -11.58,
-    "self_sufficiency_pct": 73.6
+    "feed_in_credit_eur": 67.95,
+    "total_bill_eur": 6.29,
+    "self_sufficiency_pct": 72.3
   },
   {
     "household_id": "HH-1001",

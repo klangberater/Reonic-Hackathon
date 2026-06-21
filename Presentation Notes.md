@@ -40,55 +40,55 @@ Say it plainly: **the assistant is the product** — not a dashboard with a chat
 
 Judges remember moments, not features. The app opens on the **Plan-my-day screen**: a status chip (top-left), a one-line verdict of what the home is doing right now, a big **voice mic**, a manual device grid, and — when something's wrong — a red "Needs a look" card. Hit exactly these three moments:
 
-1. **Plan by voice (the wow).** On **Sunny demo** clock, tap the mic and say *"charge the car by tomorrow morning, and run a load of washing."* The transcript appears, then the money reveal animates in and **the app speaks it back**: *"All done on sunshine — €0.87 instead of €13.20, 98% on your own power."* The timetable shows the washing on free midday solar and the car charging across the solar peak. This is the headline: you talked to your home and it planned your day around the sun.
+1. **Plan by voice (the wow).** On the **Sunny demo** clock, tap the mic and say *"charge the car by tomorrow morning, and run a load of washing."* The transcript appears, the money reveal animates in, and **the app speaks it back**: *"Planned for the day — €2.72 instead of €13.20, 69% on your own power."* The timetable puts the washing on free midday solar and the car across the solar peak. This is the headline: you talked to your home and it planned your day around the sun. (Note the **69%**, not 100% — that's deliberate, and moment 3 explains it.)
 
 2. **The plan it made.** Stay on the result. Point out the **agenda rail / timetable** (chronological, multi-day, with day separators), the **source traffic light** on each block, the Cheapest / Greenest / Soonest toggle, and the **nudge** (move a block ±1h → "Reset to best times" re-plans the rest around it). Honest control note: the car/wallbox is genuinely controllable; appliances are "set delay-start / we'll remind you."
 
-3. **The proactive anomaly.** Switch the clock to **Winter demo** in Settings. The status chip flips from a quiet green *"All good"* to a loud red *"Attention,"* and a **"Needs a look"** card surfaces *unprompted*: **"Heat pump using ~64% more than usual"** — *"~64% above what these temperatures normally need (2.2 kW vs ~1.4 kW), sustained 3 days"* — with the action *"Check heat pump settings / book a service inspection."* This is the credibility beat: the number is **weather-normalised against the home's own history**, so it tells "it's just cold out" apart from "something's actually wrong," and confirms other loads are normal so the fault is isolated to the pump. **Tap the card and the assistant explains the cause** (defrost fault / low refrigerant / thermostat). Tools produce the evidence; the model produces the words.
+3. **The proactive anomaly — and the twist.** The status chip is already a red *"Attention"* — and below "Make my plan" a **"Needs a look"** card explains the 69%: **"Solar output ~55% below normal"** — *"generating ~55% less than these sunny days normally yield (21 kWh/day vs ~48), sustained 4 days."* It's a **bright day but the panels are under-producing** — likely **soiling/dirt or shading**. **Tap the card and the assistant explains the cause** and suggests a panel clean. This is the payoff: the home didn't just plan your day, it caught *why* today wasn't all-solar. Same engine works in winter — flip to **Winter demo** and the identical card flags the **heat pump at ~64% over** (defrost fault / low refrigerant / thermostat). One weather-normalised detector, two seasons, two faults. Tools produce the evidence; the model produces the words.
 
 ---
 
 ## Demo runsheet — exact data (rehearse against these)
 
-Nothing to generate: the sunny day and the heat-pump anomaly are already seeded in the synthetic dataset and detected live. You only set the **Demo clock** (Settings → Demo clock). Numbers below are from the live backend (`HH-1001`, "Familie Becker").
+Nothing to generate: the sunny day, the solar-soiling run, and the heat-pump anomaly are all seeded in the synthetic dataset and detected live. You only set the **Demo clock** (Settings → Demo clock). Numbers below are from the backend (`HH-1001`, "Familie Becker"). The **demo day is the summer day** — voice plan and the solar anomaly happen on the *same* screen and tell one story.
 
-### Scenario A — Sunny voice plan (the wow) · clock = **Sunny demo** (2026-06-20, 11:00)
+### Scenario A — Voice plan + solar anomaly (the demo day) · clock = **Sunny demo** (2026-06-20, 11:00) or **Live** (today)
 
-**On open you'll see:** status chip green **"All good"** · verdict **"Running on free solar — sending 7.7 kW to the grid."**
-*(Context if asked: 27.5 °C, solar 8.0 kW, battery 100%, exporting 7.7 kW, price €0.12/kWh.)*
+**On open you'll see:** status chip is red **"Attention"** · verdict **"Running on free solar — sending 4.5 kW to the grid."**
+*(Context: 27.5 °C, solar 4.8 kW — dimmed by soiling — battery 100%, exporting 4.5 kW, price €0.12/kWh.)*
 
-**Say (or type in "or type it here…"):** *"Charge the car by tomorrow morning, and run a load of washing."*
+**Step 1 — plan by voice.** Tap the mic (or type in "or type it here…"): *"Charge the car by tomorrow morning, and run a load of washing."*
+- Transcript quote → "Understanding what you said…" → "Laying it under the sun…"
+- **Spoken + on-screen reveal:** *"Planned for the day — €2.72 instead of €13.20, 69% on your own power."*
+- **Saves €10.48 / 9.8 kg CO₂ today** vs a last-minute run.
+- Timetable: **Washing 11:00–12:30** (free · solar, green) · **Car 11:00–14:30** (68% own power, partial, €2.72 grid).
+- *Backup if mic/network is flaky:* type the same sentence — identical result, no audio dependency.
 
-**What appears:**
-- Transcript quote, then "Understanding what you said…" → "Laying it under the sun…"
-- **Spoken + on-screen reveal:** *"All done on sunshine — €0.87 instead of €13.20, 98% on your own power."*
-- **Saves €12.33 / 14 kg CO₂ today** vs a last-minute run.
-- Timetable: **Washing 11:00–12:30** (free · solar, green light) · **Car 11:00–14:30** (97% own power, mixed, €0.87 grid).
-- Optional: toggle Greenest/Soonest, or nudge a block → "Reset to best times".
+**Step 2 — the twist (why only 69%?).** Below "Make my plan", a red **"Needs a look"** card:
+- Title: **"Solar output ~55% below normal"**
+- Detail: *"Solar is generating ~55% less than these sunny days normally yield (21 kWh/day vs ~48), sustained 4 days."* (period 16–19 Jun)
+- Action: *"Check the panels for dirt/soiling or shading — book a clean or inspection."* + an **"Ask why"** affordance.
 
-**Backup if mic/network is flaky:** type the exact same sentence in the field under the mic — identical result, no audio dependency.
+**Tap the card → the assistant explains** (seeded with "Why is my solar generating less than it should?"): names **soiling/dirt, shading, or a string/inverter fault**, and suggests a panel clean — leading with the numbers. The soiling is *why* the voice plan landed at 69% and not all-solar: one connected story.
 
-### Scenario B — Proactive anomaly · clock = **Winter demo** (2026-01-15, 08:00)
+### Scenario B — Same detector, another season · clock = **Winter demo** (2026-01-15, 08:00)
 
-**On switch you'll see:** status chip flips to red **"Attention"** · verdict **"Pulling 3.1 kW from the grid right now."**
+Flip the clock to prove the anomaly engine generalises. Status stays red **"Attention"** · verdict **"Pulling 3.1 kW from the grid right now."**
 *(Context: −1.2 °C, heat pump drawing 2.5 kW, battery 0%, importing 3.1 kW, price €0.48/kWh; month cost-to-date €320, projected €692.)*
 
-**"Needs a look" card (below Make my plan):**
-- Title: **"Heat pump using ~64% more than usual"**
-- Detail: *"Heat-pump electricity is ~64% above what these temperatures normally need (2.2 kW vs ~1.4 kW), sustained 3 days."* (period 12–14 Jan)
-- Action: *"Check heat pump settings / book a service inspection."* + an **"Ask why"** affordance.
+**"Needs a look" card:** **"Heat pump using ~64% more than usual"** — *"~64% above what these temperatures normally need (2.2 kW vs ~1.4 kW), sustained 3 days"* (12–14 Jan). Action: *"Check heat pump settings / book a service inspection."*
+**Tap → the assistant explains:** *"…64% higher than expected for these temperatures… possible defrost fault, low refrigerant, or thermostat misconfiguration… other loads are normal, so it's isolated to the heat pump."*
 
-**Tap the card → the assistant explains the cause** (seeded with "Why is my heat pump using so much?"). It answers: *"…about 64% higher than expected for these temperatures, sustained three days. Possible defrost fault, low refrigerant, or thermostat misconfiguration… other loads are normal, so it's isolated to the heat pump."* This is the payoff line: **the tool produces the evidence (weather-normalised against the home's own history), the model produces the words** — same architecture principle as the voice plan, now catching a fault before the bill does.
+Two seasons, two faults, **one weather-normalised detector** — tools produce the evidence, the model produces the words.
 
-### Third clock — **Live**
-Tracks the real wall clock (pinned to the data year). Great for "this is real-time," but at night there's no solar, so **don't** run the voice-plan wow on it — use Sunny demo for that beat.
+> **Why 69% and not 98%:** the panels are dirty across the demo window, so the live solar (4.8 kW) is genuinely lower and the plan can't be all-solar — and the anomaly card explains exactly that. If you'd rather show a pristine "all done on sunshine" voice plan, the soiling window (`SOIL_START..SOIL_END` in `scripts/transform_dataset.py`) can be pulled back off the demo day and the data regenerated.
 
 ---
 
 ## Cross-cutting must-mentions
 
 - **Synthetic data is fine and intended** — a full-2026 dataset at 15-min resolution with a "virtual now" anchor. Nobody expects live hardware; they expect the *experience* to feel real.
-- **Money is quantified everywhere** — specific euros, not vibes (€0.87 vs €13.20, saves €12.33). That's how we beat ten prettier dashboards.
+- **Money is quantified everywhere** — specific euros, not vibes (€2.72 vs €13.20, saves €10.48). That's how we beat ten prettier dashboards.
 - **The voice loop is real, end-to-end** — real STT, real GPT-4o parsing into structured tasks, real planner, real TTS. No stubs. But the *numbers* come from tools, not the model.
 - **Control honesty** — the car/wallbox is genuinely controllable (confirm = real automation); appliances are "set delay-start / we'll remind you." Saying which is a credibility detail judges notice.
 - **Stay calm and single-screen** — one screen, talk to it, done. Out-simplicity; don't try to out-reliability them in a 2-minute cut.
@@ -100,7 +100,7 @@ Tracks the real wall clock (pinned to the data year). Great for "this is real-ti
 1. Here's the homeowner's reality: solar, battery, heat pump, EV, dynamic tariff, a contract nobody reads — scattered across apps and PDFs.
 2. Here's the incumbent's actual app: a flow diagram and a savings counter. Descriptive, retrospective, no answers.
 3. Here are the four things it doesn't do — each backed by a real incumbent complaint.
-4. Here's Lumen doing it — you *speak* your day and it plans it around the sun, and it catches a failing heat pump before the bill does.
+4. Here's Lumen doing it — you *speak* your day and it plans it around the sun, and it catches dirty, under-producing panels (and, in winter, a failing heat pump) before the bill does.
 
 ---
 

@@ -81,6 +81,7 @@ struct InsightEvent: Decodable, Sendable, Identifiable {
     let detail: String
     let suggestedAction: String
     let active: Bool
+    let subject: String?        // anomalies: "heatpump" | "solar" — picks the "ask why" seed
     var id: String { type + period + title }
 }
 
