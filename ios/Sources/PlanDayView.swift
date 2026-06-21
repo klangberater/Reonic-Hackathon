@@ -72,6 +72,12 @@ struct PlanDayView: View {
             }
             .accessibilityLabel("Settings")
         }
+        .overlay { brandMark }
+    }
+
+    /// The app wordmark, centred in the header.
+    private var brandMark: some View {
+        Text("Lumen").font(.headline.weight(.bold)).foregroundStyle(Theme.ink)
     }
 
     // Health pill. When there's a live anomaly it turns red and is tappable → the assistant
@@ -287,6 +293,7 @@ struct PlanDayView: View {
                         }
                         .accessibilityLabel("Settings")
                     }
+                    .overlay { brandMark }
                     if vm.didReveal {
                         MoneyReveal(plan: p).id(p.tasks.map(\.window).joined())
                         if !vm.planNotes.isEmpty { noteChips }
