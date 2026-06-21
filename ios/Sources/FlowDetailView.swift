@@ -25,7 +25,7 @@ struct FlowDetailView: View {
                     pill("house.fill", "Home", state.consumptionKw, "using", Theme.green)
                     pill("minus.plus.batteryblock.fill", "Battery", abs(state.battery.flowKw),
                          "\(Int(state.battery.socPct))% · \(state.battery.state)", Theme.greenDeep)
-                    pill("bolt.fill", "Grid", abs(state.grid.flowKw), state.grid.direction, Theme.grid)
+                    pill("bolt.fill", "Grid", abs(state.grid.flowKw), gridSub, Theme.grid)
                 }
 
                 HStack {
@@ -48,21 +48,33 @@ struct FlowDetailView: View {
     // The month-end forecast — carried over from the (now hidden) Home screen.
     @ViewBuilder private var monthSection: some View {
         if let m = money {
+            let toDate = m.costToDateEur < 0
+                ? "€\(String(format: "%.0f", -m.costToDateEur)) in credit"
+                : "€\(String(format: "%.0f", m.costToDateEur)) spent"
+            let explain = m.earning
+                ? "Your solar feed-in, minus the grid power you buy back and fees."
+                : "Your grid power and fees, minus your solar feed-in."
             VStack(alignment: .leading, spacing: 12) {
                 Text("This month").font(.headline).foregroundStyle(Theme.ink)
                 HStack(spacing: 12) {
                     moneyTile(m.earning ? "arrow.down.left.circle.fill" : "eurosign.circle.fill",
-                              m.earning ? "On track to earn" : "Projected bill",
+                              m.earning ? "Net — on track to earn" : "Net — projected bill",
                               "€\(abs(Int(m.projectedTotalEur.rounded())))",
                               m.earning ? Theme.green : Theme.amber)
-                    moneyTile("sun.max.fill", "Earned from solar",
+                    moneyTile("sun.max.fill", "Solar sold to grid",
                               "€\(Int(m.earnedFromSolarEur.rounded()))", Theme.amber)
                 }
-                Text("\(m.costToDateEur < 0 ? "€\(String(format: "%.0f", -m.costToDateEur)) credit" : "€\(String(format: "%.0f", m.costToDateEur)) spent") so far · day \(m.daysElapsed) of \(m.daysInMonth)")
+                Text("\(explain) \(toDate) so far \u{00B7} day \(m.daysElapsed) of \(m.daysInMonth).")
                     .font(.caption).foregroundStyle(Theme.subtle)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.top, 4)
         }
+    }
+
+    // "balanced" (≈0 grid flow) reads as jargon — say it plainly.
+    private var gridSub: String {
+        state.grid.direction == "balanced" ? "not using the grid" : state.grid.direction
     }
 
     private func moneyTile(_ icon: String, _ title: String, _ value: String, _ tint: Color) -> some View {
